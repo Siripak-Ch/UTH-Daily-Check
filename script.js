@@ -7,7 +7,7 @@ Daily Check Frontend V2
 
 async function callAppsScript(action, data = null) {
   /*
-   * FINAL V5.20
+   * FINAL V5.21
    * - No local-sample data
    * - Always use current APPS_SCRIPT_URL from config.js
    * - Add cache buster to avoid old response caching
@@ -17,14 +17,14 @@ async function callAppsScript(action, data = null) {
     throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  const cacheBust = "_ts=" + Date.now() + "&_v=V5.20";
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.21";
   const parseResponse = async (res) => {
     const text = await res.text();
     try { return JSON.parse(text); }
     catch (e) { throw new Error("Apps Script response ไม่ใช่ JSON: " + text.slice(0, 250)); }
   };
 
-  if (["dashboard","getSettings","getUserLoginSettings","getDepartmentSettings","getVersion","checkRootFolder"].includes(action)) {
+  if (["dashboard","getSettings","getSettingsBundle","getUserLoginSettings","getDepartmentSettings","getEquipmentList","getVersion","checkRootFolder"].includes(action)) {
     const url = appsScriptUrl + (appsScriptUrl.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action) + "&" + cacheBust;
     const res = await fetch(url, { method: "GET", cache: "no-store" });
     return await parseResponse(res);
@@ -34,15 +34,15 @@ async function callAppsScript(action, data = null) {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data, _v: "V5.20", _ts: Date.now() })
+    body: JSON.stringify({ action, data, _v: "V5.21", _ts: Date.now() })
   });
   return await parseResponse(res);
 }
 
-/* removedSaveSample removed in FINAL V5.20: all data comes from Google Sheet. */
+/* removedSaveSample removed in FINAL V5.21: all data comes from Google Sheet. */
 
 
-/* removedDashboardSample removed in FINAL V5.20: all data comes from Google Sheet. */
+/* removedDashboardSample removed in FINAL V5.21: all data comes from Google Sheet. */
 
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -282,7 +282,7 @@ function defaultSettings() {
 }
 
 function getSettings() {
-  // FINAL V5.20: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  // FINAL V5.21: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
   return defaultSettings();
 }
 
@@ -304,10 +304,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.20_SHEET_ONLY_CONFIG")) {
+    if (String(v).includes("V5.21_KPI_FAST_SHEET_EQUIPMENT")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.20\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.21\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -323,37 +323,58 @@ function toggleSettingSection(btn) {
 
 async function loadSettingsForm() {
   const cfg = window.DAILY_CHECK_CONFIG || {};
-  const mapDefaults = {
+  const defaults = {
     "setting-sheet-link": cfg.SHEET_LINK || "",
     "setting-admin-email": "",
     "setting-root-folder": "",
     "setting-summary-time": "17:00"
   };
-  Object.entries(mapDefaults).forEach(([id, val]) => {
+  Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.value = val || "";
   });
 
+  const userBox = document.getElementById("setting-userlogin-editor");
+  const deptBox = document.getElementById("setting-dept-summary-cards");
+  if (userBox) userBox.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
+  if (deptBox) deptBox.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด DepartmentSetting จาก Sheet...</div>`;
+
   try {
-    const res = await callAppsScript("getSettings", {});
-    if (res && res.success) {
+    const bundle = await callAppsScript("getSettingsBundle", {});
+    const settings = bundle.settings || bundle;
+    if (settings && settings.success) {
       const map = {
-        "setting-sheet-link": res.sheetLink || cfg.SHEET_LINK || "",
-        "setting-admin-email": res.adminEmail || "",
-        "setting-root-folder": res.rootFolderId || "",
-        "setting-summary-time": res.summaryTime || "17:00"
+        "setting-sheet-link": settings.sheetLink || cfg.SHEET_LINK || "",
+        "setting-admin-email": settings.adminEmail || "",
+        "setting-root-folder": settings.rootFolderId || "",
+        "setting-summary-time": settings.summaryTime || "17:00"
       };
       Object.entries(map).forEach(([id, val]) => {
         const el = document.getElementById(id);
         if (el) el.value = val || "";
       });
     }
-  } catch (e) {
-    console.warn("loadSettingsForm from sheet failed", e);
-  }
 
-  loadUserLoginSettings();
-  loadDepartmentSummarySettings();
+    const userRes = bundle.userLogin || {};
+    if (userRes.success) {
+      globalUserLoginRows = userRes.users || [];
+      renderUserLoginEditor(globalUserLoginRows);
+    } else {
+      renderUserLoginLoadError(userRes.error || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
+    }
+
+    const deptRes = bundle.departmentSettings || {};
+    if (deptRes.success) {
+      globalDeptSettings = deptRes.settings || [];
+      renderDepartmentSettingCards(deptRes, "");
+    } else {
+      renderDepartmentSettingLoadError(deptRes.error || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
+    }
+  } catch (e) {
+    console.warn("loadSettingsForm bundle failed", e);
+    renderUserLoginLoadError(e.message);
+    renderDepartmentSettingLoadError(e.message);
+  }
 }
 
 
@@ -367,7 +388,7 @@ function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.20 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.21 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -706,21 +727,23 @@ function getDepartmentSummaryCsvFromForm() {
 }
 
 async function saveDepartmentSettingOnly() {
-  showLoading("กำลังบันทึก KPI...", "กำลังบันทึก Department Email และ Target รายเครื่องมือ");
+  showLoading("กำลังบันทึก KPI...", "กำลังบันทึก Department Email / Target ลง Sheet แบบ batch");
   try {
     const rows = getDepartmentSettingRowsFromCards();
-    const res = await callAppsScript("saveDepartmentSettings", { settings: rows, equipmentList: EQUIPMENTS });
+    const res = await callAppsScript("saveDepartmentSettings", { settings: rows });
     if (res && res.success) {
       globalDeptSettings = res.settings || rows;
       alert("บันทึก KPI / Department Email สำเร็จ");
       renderDepartmentSettingCards(res, "");
+      renderDepartmentKpiDashboard();
     } else if (isUnknownActionError(res)) {
       showBackendOldVersionAlert("saveDepartmentSettings");
     } else {
       alert("บันทึกไม่สำเร็จ: " + ((res && res.error) || "Unknown error"));
     }
   } catch (e) {
-    alert("บันทึกไม่สำเร็จ: " + e.message + "\\nกรุณาตรวจสอบว่า Deploy Code.js เป็นเวอร์ชันล่าสุดแล้ว");
+    if (isUnknownActionError(e)) showBackendOldVersionAlert("saveDepartmentSettings");
+    else alert("บันทึกไม่สำเร็จ: " + e.message + "\\nกรุณาตรวจสอบว่า Deploy Code.js เป็นเวอร์ชันล่าสุดแล้ว");
   } finally {
     hideLoading(true);
   }
@@ -736,25 +759,18 @@ async function saveSettings(options = {}) {
     summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
   };
 
-  if (!silent) showLoading("กำลังบันทึก Setting...", "กำลังบันทึกข้อมูลลง Google Sheet โดยตรง");
+  if (!silent) showLoading("กำลังบันทึก Setting...", "บันทึกเฉพาะ SystemConfig เพื่อให้เร็วขึ้น");
 
   try {
-    await callAppsScript("saveSettings", {
+    const res = await callAppsScript("saveSettings", {
       adminEmail: s.adminEmail,
       spreadsheetId: extractSpreadsheetId(s.sheetLink) || (cfg.SPREADSHEET_ID || ""),
       sheetLink: s.sheetLink,
       rootFolderId: s.rootFolderId,
       summaryTime: s.summaryTime
     });
-
-    const userRows = getUserLoginRowsFromEditor();
-    if (userRows.length) await callAppsScript("saveUserLoginSettings", { users: userRows });
-
-    const deptRows = getDepartmentSettingRowsFromCards();
-    const resDept = await callAppsScript("saveDepartmentSettings", { settings: deptRows, equipmentList: EQUIPMENTS });
-    if (resDept && resDept.success) globalDeptSettings = resDept.settings || globalDeptSettings;
-
-    if (!silent) alert("บันทึก Setting ลง Sheet สำเร็จ");
+    if (!res || !res.success) throw new Error((res && res.error) || "saveSettings failed");
+    if (!silent) alert("บันทึก Setting ลง Sheet SystemConfig สำเร็จ");
   } catch (e) {
     if (!silent) alert("บันทึก Setting ไม่สำเร็จ: " + e.message);
   } finally {
@@ -863,7 +879,7 @@ function setupLogin() {
   }
 }
 
-/* fallbackLoginUser removed in FINAL V5.20: all data comes from Google Sheet. */
+/* fallbackLoginUser removed in FINAL V5.21: all data comes from Google Sheet. */
 
 
 async function submitLoginCode() {
@@ -1761,45 +1777,78 @@ function renderDepartmentKpiDashboard() {
   if (!list) return;
 
   const refDate = getKpiReferenceDate();
-  if (label) label.textContent = "Actual vs Target total equipment per day | วันที่ " + formatDateForKpi(refDate);
-
-  const rowsForDate = (globalRawData || []).filter(r => getRowDate(r) === refDate);
-  const actualByDept = {};
-  rowsForDate.forEach(r => {
-    const dept = r.dept || "-";
-    actualByDept[dept] = (actualByDept[dept] || 0) + 1;
-  });
-
-  const grouped = groupDepartmentSettings(globalDeptSettings || []);
-  let items = Object.values(grouped).map(g => {
-    const target = Object.values(g.equipmentTargets || {}).reduce((sum, v) => sum + Number(v || 0), 0);
-    return {
-      department: g.department,
-      headEmail: g.headEmail || "",
-      target,
-      actual: actualByDept[g.department] || 0,
-      active: g.active !== false
-    };
-  }).filter(s => s.active);
-
-  if (!items.length) {
-    const deptNames = Array.from(new Set([...(globalRawData || []).map(r => r.dept).filter(Boolean), ...DEPARTMENTS.filter(d => d !== "อื่นๆ")]));
-    items = deptNames.map(d => ({ department: d, headEmail: "", target: 0, actual: actualByDept[d] || 0, active: true }));
-  }
-
   const fDept = document.getElementById("filter-dept");
   const selectedDept = fDept ? fDept.value : "ALL";
+
+  const rowsForDate = (globalRawData || []).filter(r => getRowDate(r) === refDate);
+  const groupedTargets = groupDepartmentSettings(globalDeptSettings || []);
+
+  let items = [];
+  let modeLabel = "";
+
   if (selectedDept && selectedDept !== "ALL") {
-    items = items.filter(s => s.department === selectedDept);
-    if (!items.length) items = [{ department: selectedDept, headEmail: "", target: 0, actual: actualByDept[selectedDept] || 0, active: true }];
+    // Department selected: show each equipment actual / target for that department
+    modeLabel = `รายเครื่องมือของแผนก ${selectedDept}`;
+    const actualByEquip = {};
+    rowsForDate
+      .filter(r => (r.dept || "-") === selectedDept)
+      .forEach(r => {
+        const eq = r.equip || "-";
+        actualByEquip[eq] = (actualByEquip[eq] || 0) + 1;
+      });
+
+    const equipTargets = (groupedTargets[selectedDept] && groupedTargets[selectedDept].equipmentTargets) || {};
+    const equipNames = Array.from(new Set([
+      ...Object.keys(equipTargets).filter(Boolean),
+      ...Object.keys(actualByEquip).filter(Boolean)
+    ]));
+
+    items = equipNames.map(eq => ({
+      name: equipmentShort(eq),
+      fullName: eq,
+      target: Number(equipTargets[eq] || 0),
+      actual: Number(actualByEquip[eq] || 0)
+    }));
+  } else {
+    // All departments: show each department total checked / total target from Daily Summary KPI setting
+    modeLabel = "รวมทุกแผนก";
+    const actualByDept = {};
+    rowsForDate.forEach(r => {
+      const dept = r.dept || "-";
+      actualByDept[dept] = (actualByDept[dept] || 0) + 1;
+    });
+
+    const deptNames = Array.from(new Set([
+      ...Object.keys(groupedTargets),
+      ...Object.keys(actualByDept)
+    ])).filter(Boolean);
+
+    items = deptNames.map(dept => {
+      const g = groupedTargets[dept] || { equipmentTargets: {}, active: true, headEmail: "" };
+      const target = Object.values(g.equipmentTargets || {}).reduce((sum, v) => sum + Number(v || 0), 0);
+      return {
+        name: dept,
+        fullName: dept,
+        target,
+        actual: Number(actualByDept[dept] || 0),
+        active: g.active !== false
+      };
+    }).filter(x => x.active !== false);
   }
 
-  items.sort((a, b) => (b.actual - a.actual) || a.department.localeCompare(b.department, "th"));
+  items.sort((a, b) => (b.actual - a.actual) || a.name.localeCompare(b.name, "th"));
 
   const totalActual = items.reduce((s, x) => s + Number(x.actual || 0), 0);
   const totalTarget = items.reduce((s, x) => s + Number(x.target || 0), 0);
   const totalPct = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : (totalActual > 0 ? 100 : 0);
   const maxVal = Math.max(1, ...items.map(x => Math.max(Number(x.actual || 0), Number(x.target || 0))));
+
+  if (label) label.textContent = `Actual vs Target | ${modeLabel} | วันที่ ${formatDateForKpi(refDate)}`;
+  if (!items.length) {
+    list.innerHTML = `<div class="p-4 text-sm text-slate-500 rounded-2xl bg-slate-50 border border-slate-100">ยังไม่มีข้อมูล KPI สำหรับเงื่อนไขนี้</div>`;
+    if (overall) overall.textContent = "รวม 0/- รายการ (0%)";
+    return;
+  }
 
   const bars = items.map(item => {
     const actual = Number(item.actual || 0);
@@ -1807,12 +1856,13 @@ function renderDepartmentKpiDashboard() {
     const pct = target > 0 ? Math.round((actual / target) * 100) : (actual > 0 ? 100 : 0);
     const actualH = Math.max(actual > 0 ? 5 : 0, Math.round((actual / maxVal) * 230));
     const targetH = Math.max(target > 0 ? 5 : 0, Math.round((target / maxVal) * 230));
-    const deptTitle = escapeHTML(item.department);
+    const title = escapeHTML(item.fullName || item.name);
+    const shortName = escapeHTML(item.name || "-");
     const pctText = target > 0 ? pct + "%" : (actual > 0 ? "100%" : "0%");
     return `
-      <div class="kpi-bar-group" title="${deptTitle}: Actual ${actual} / Target ${target} (${pctText})">
+      <div class="kpi-bar-group" title="${title}: Actual ${actual} / Target ${target} (${pctText})">
         <div class="kpi-tooltip">
-          <b>${deptTitle}</b><br>
+          <b>${title}</b><br>
           Actual: ${actual.toLocaleString()}<br>
           Target: ${target.toLocaleString()}<br>
           Complete: ${pctText}
@@ -1822,7 +1872,7 @@ function renderDepartmentKpiDashboard() {
           <div class="kpi-bar-target" style="height:${targetH}px"></div>
           <div class="kpi-bar-actual" style="height:${actualH}px"></div>
         </div>
-        <div class="kpi-dept-label" title="${deptTitle}">${deptTitle}</div>
+        <div class="kpi-dept-label" title="${title}">${shortName}</div>
       </div>`;
   }).join("");
 
