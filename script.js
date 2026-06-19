@@ -6,70 +6,44 @@ Daily Check Frontend V2
 */
 
 async function callAppsScript(action, data = null) {
-  const appsScriptUrl = window.DAILY_CHECK_CONFIG && window.DAILY_CHECK_CONFIG.APPS_SCRIPT_URL;
-  const isMock = !appsScriptUrl || appsScriptUrl.includes("PASTE_APPS_SCRIPT");
-
-  // Mock mode for testing the UI on GitHub before Apps Script URL is added
-  if (isMock) {
-    if (action === "save") return mockSave(data);
-    if (action === "dashboard") return mockDashboard();
-    if (action === "log") return Promise.resolve({ success: true });
-    if (action === "loginUser") return Promise.resolve({ success: true, user: fallbackLoginUser(data && data.code) || { code: "UTH", name: "UTH Admin", department: "ALL", role: "admin" }, mock: true });
-    if (action === "getUserLoginSettings") return Promise.resolve({ success: true, users: [], departments: [] });
-    if (action === "saveUserLoginSettings") return Promise.resolve({ success: true, users: data.users || [], departments: [] });
-    if (action === "getDepartmentSettings") return Promise.resolve({ success: true, settings: [], csv: "Department,HeadEmail,TargetPerDay,Active\nอายุรกรรมหญิง,,10,TRUE\nอายุรกรรมชาย,,10,TRUE" });
-    if (action === "saveDepartmentSettings") return Promise.resolve({ success: true, mock: true });
-    if (["saveSettings","createDailySummaryTrigger","sendDailySummaryNow"].includes(action)) return Promise.resolve({ success: true, mock: true });
+  /*
+   * FINAL V5.20
+   * - No local-sample data
+   * - Always use current APPS_SCRIPT_URL from config.js
+   * - Add cache buster to avoid old response caching
+   */
+  const appsScriptUrl = (window.DAILY_CHECK_CONFIG && window.DAILY_CHECK_CONFIG.APPS_SCRIPT_URL || "").trim();
+  if (!appsScriptUrl || appsScriptUrl.includes("PASTE_APPS_SCRIPT")) {
+    throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  if (action === "dashboard") {
-    const res = await fetch(appsScriptUrl + "?action=dashboard");
-    return await res.json();
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.20";
+  const parseResponse = async (res) => {
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch (e) { throw new Error("Apps Script response ไม่ใช่ JSON: " + text.slice(0, 250)); }
+  };
+
+  if (["dashboard","getSettings","getUserLoginSettings","getDepartmentSettings","getVersion","checkRootFolder"].includes(action)) {
+    const url = appsScriptUrl + (appsScriptUrl.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action) + "&" + cacheBust;
+    const res = await fetch(url, { method: "GET", cache: "no-store" });
+    return await parseResponse(res);
   }
 
-  if (action === "log") {
-    const res = await fetch(appsScriptUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "log", data }) });
-    return await res.json();
-  }
-
-  const res = await fetch(appsScriptUrl, {
+  const res = await fetch(appsScriptUrl + (appsScriptUrl.includes("?") ? "&" : "?") + cacheBust, {
     method: "POST",
+    cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data })
+    body: JSON.stringify({ action, data, _v: "V5.20", _ts: Date.now() })
   });
-  return await res.json();
+  return await parseResponse(res);
 }
 
-function mockSave(data) {
-  const rows = JSON.parse(localStorage.getItem("dailyCheckMockRows") || "[]");
-  const now = new Date();
-  const checklistResult = [];
-  Object.keys(data.checklistTexts || {}).forEach(key => {
-    checklistResult.push(data.checklistTexts[key] || key);
-  });
-  rows.unshift({
-    rawDate: now.toISOString(),
-    timestamp: formatDateTime(now),
-    checkDate: data.date,
-    dept: data.department,
-    equip: data.equipment,
-    sn: data.idCode,
-    deviceIdCode: data.deviceIdCode || "",
-    assetNo: data.assetNo || "",
-    inspector: data.inspector || "-",
-    checkText: checklistResult.join("\n"),
-    status: data.status,
-    note: data.note || "-",
-    img: data.imageFile && data.imageFile.base64 ? data.imageFile.base64 : null
-  });
-  localStorage.setItem("dailyCheckMockRows", JSON.stringify(rows.slice(0, 100)));
-  return Promise.resolve({ success: true, mock: true });
-}
+/* removedSaveSample removed in FINAL V5.20: all data comes from Google Sheet. */
 
-function mockDashboard() {
-  const rows = JSON.parse(localStorage.getItem("dailyCheckMockRows") || "[]");
-  return Promise.resolve({ success: true, rows });
-}
+
+/* removedDashboardSample removed in FINAL V5.20: all data comes from Google Sheet. */
+
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 
@@ -288,38 +262,10 @@ const ROWS_PER_PAGE = 15;
 // ============================================================
 // SETTINGS + LOGIN
 // ============================================================
-const SETTINGS_KEY = "uth_daily_check_settings_v4";
+const SETTINGS_KEY = "uth_daily_check_settings_v4_DISABLED_V520";
 const INITIAL_APPS_SCRIPT_URL = (window.DAILY_CHECK_CONFIG && window.DAILY_CHECK_CONFIG.APPS_SCRIPT_URL) || "";
 const LOGIN_KEY = "uth_daily_check_logged_in_v5";
 const LOGIN_USER_KEY = "uth_daily_check_user_v5";
-
-const DEFAULT_LOGIN_USERS_CSV = `Code,Name,Department,Role,Active
-UTHADMIN,UTH Admin,ALL,admin,TRUE
-ADMF,อายุรกรรมหญิง,อายุรกรรมหญิง,user,TRUE
-ADMM,อายุรกรรมชาย,อายุรกรรมชาย,user,TRUE
-COH,Cohort,Cohort(ผู้ป่วยในรวม),user,TRUE
-ICUM,ICU อายุรกรรม,ICUอายุรกรรม,user,TRUE
-ICUS,ICU ศัลยกรรม,ICUศัลยกรรม,user,TRUE
-CCU,CCU,CCU,user,TRUE
-ER,ER,ER(อุบัติเหตุฉุกเฉิน),user,TRUE
-OPD,OPD,งานผู้ป่วยนอก,user,TRUE
-IPD,IPD,งานผู้ป่วยใน,user,TRUE
-OR,ห้องผ่าตัด,งานห้องผ่าตัด,user,TRUE
-ORS,ห้องผ่าตัดเล็ก,งานห้องผ่าตัดเล็ก,user,TRUE
-DIAL,ไตเทียม,หน่วยไตเทียมเฉลิมพระเกียรติ,user,TRUE
-LAB,ห้องปฏิบัติการ,ห้องปฏิบัติการ,user,TRUE
-XRAY,รังสีวิทยา,รังสีวิทยา,user,TRUE
-REHAB,เวชกรรมฟื้นฟู,เวชกรรมฟื้นฟู,user,TRUE
-DENT,ทันตกรรม,ทันตกรรม,user,TRUE
-PHARM,เภสัชกรรม,เภสัชกรรม,user,TRUE
-PED,กุมารเวชกรรม,กุมารเวชกรรม,user,TRUE
-NICU,NICU,NICU,user,TRUE
-PICU,PICU,PICU,user,TRUE
-OBG,สูติ-นรีเวช,สูติ-นรีเวช,user,TRUE
-LR,ห้องคลอด,ห้องคลอด,user,TRUE
-ANC,ฝากครรภ์,ANC,user,TRUE
-PMR,กายภาพบำบัด,กายภาพบำบัด,user,TRUE
-MED,เวชระเบียน,เวชระเบียน,user,TRUE`;
 
 function defaultSettings() {
   const cfg = window.DAILY_CHECK_CONFIG || {};
@@ -328,36 +274,26 @@ function defaultSettings() {
     hospitalName: cfg.HOSPITAL_NAME || "โรงพยาบาลอุทัยธานี",
     systemName: cfg.SYSTEM_NAME || "ระบบ Daily Check เครื่องมือแพทย์",
     logoUrl: cfg.LOGO_URL || "logo-uth.png",
-    adminEmail: cfg.ADMIN_EMAIL || "",
+    adminEmail: "",
     sheetLink: cfg.SHEET_LINK || "",
-    rootFolderId: cfg.ROOT_FOLDER_ID || "",
-    loginCodes: cfg.LOGIN_CODES || "UTHADMIN,ADMF,ADMM,ER,OR,ORS,DIAL,ICUM,ICUS,COH",
-    loginUsers: cfg.LOGIN_USERS || DEFAULT_LOGIN_USERS_CSV,
-    summaryTime: cfg.SUMMARY_TIME || "17:00"
+    rootFolderId: "",
+    summaryTime: "17:00"
   };
 }
 
 function getSettings() {
-  try {
-    return Object.assign(defaultSettings(), JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
-  } catch (e) {
-    return defaultSettings();
-  }
+  // FINAL V5.20: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  return defaultSettings();
 }
 
 function applySettingsToConfig() {
-  const s = getSettings();
-  window.DAILY_CHECK_CONFIG = Object.assign(window.DAILY_CHECK_CONFIG || {}, {
-    APPS_SCRIPT_URL: s.appsScriptUrl || INITIAL_APPS_SCRIPT_URL,
-    HOSPITAL_NAME: s.hospitalName,
-    SYSTEM_NAME: s.systemName,
-    LOGO_URL: s.logoUrl,
-    ADMIN_EMAIL: s.adminEmail,
-    SHEET_LINK: s.sheetLink,
-    ROOT_FOLDER_ID: s.rootFolderId,
-    LOGIN_CODES: s.loginCodes,
-    LOGIN_USERS: s.loginUsers,
-    SUMMARY_TIME: s.summaryTime
+  const cfg = window.DAILY_CHECK_CONFIG || {};
+  window.DAILY_CHECK_CONFIG = Object.assign(cfg, {
+    APPS_SCRIPT_URL: INITIAL_APPS_SCRIPT_URL || cfg.APPS_SCRIPT_URL,
+    HOSPITAL_NAME: cfg.HOSPITAL_NAME || "โรงพยาบาลอุทัยธานี",
+    SYSTEM_NAME: cfg.SYSTEM_NAME || "ระบบ Daily Check เครื่องมือแพทย์",
+    LOGO_URL: cfg.LOGO_URL || "logo-uth.png",
+    SHEET_LINK: cfg.SHEET_LINK || ""
   });
 }
 
@@ -368,10 +304,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.19_FORCE_CLEAN_BACKEND")) {
+    if (String(v).includes("V5.20_SHEET_ONLY_CONFIG")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.19\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.20\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -385,18 +321,37 @@ function toggleSettingSection(btn) {
   if (section) section.classList.toggle("open");
 }
 
-function loadSettingsForm() {
-  const s = getSettings();
-  const map = {
-    "setting-sheet-link": s.sheetLink,
-    "setting-admin-email": s.adminEmail,
-    "setting-root-folder": s.rootFolderId,
-    "setting-summary-time": s.summaryTime || "17:00"
+async function loadSettingsForm() {
+  const cfg = window.DAILY_CHECK_CONFIG || {};
+  const mapDefaults = {
+    "setting-sheet-link": cfg.SHEET_LINK || "",
+    "setting-admin-email": "",
+    "setting-root-folder": "",
+    "setting-summary-time": "17:00"
   };
-  Object.entries(map).forEach(([id, val]) => {
+  Object.entries(mapDefaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.value = val || "";
   });
+
+  try {
+    const res = await callAppsScript("getSettings", {});
+    if (res && res.success) {
+      const map = {
+        "setting-sheet-link": res.sheetLink || cfg.SHEET_LINK || "",
+        "setting-admin-email": res.adminEmail || "",
+        "setting-root-folder": res.rootFolderId || "",
+        "setting-summary-time": res.summaryTime || "17:00"
+      };
+      Object.entries(map).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+      });
+    }
+  } catch (e) {
+    console.warn("loadSettingsForm from sheet failed", e);
+  }
+
   loadUserLoginSettings();
   loadDepartmentSummarySettings();
 }
@@ -412,7 +367,7 @@ function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.19 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.20 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -426,35 +381,41 @@ function showBackendOldVersionAlert(actionName) {
 async function loadUserLoginSettings() {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
-  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin...</div>`;
+  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
   try {
     const res = await callAppsScript("getUserLoginSettings", {});
     if (res && res.success) {
       globalUserLoginRows = res.users || [];
       renderUserLoginEditor(globalUserLoginRows);
     } else {
-      renderUserLoginEditor(getLocalUserLoginFallback());
+      renderUserLoginLoadError((res && res.error) || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
     console.warn("loadUserLoginSettings failed", e);
-    renderUserLoginEditor(getLocalUserLoginFallback());
+    renderUserLoginLoadError(e.message);
   }
 }
 
-function getLocalUserLoginFallback() {
-  return (DEPARTMENTS || []).filter(d => d && d !== "อื่นๆ").map((dept, idx) => ({
-    code: dept.substring(0, 3).toUpperCase() + (idx + 1),
-    name: dept,
-    department: dept,
-    role: "user",
-    active: true
-  }));
+function renderUserLoginLoadError(message) {
+  const box = document.getElementById("setting-userlogin-editor");
+  if (!box) return;
+  box.innerHTML = `<div class="p-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl">
+    โหลด UserLogin จาก Google Sheet ไม่สำเร็จ<br>
+    <span class="text-xs">${escapeHTML(message || "")}</span><br>
+    <span class="text-xs">ระบบจะไม่ใช้ sample/fallback data — กรุณาตรวจ Apps Script และ Deploy version ล่าสุด</span>
+  </div>`;
 }
+
+
 
 function renderUserLoginEditor(users = []) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
-  if (!users.length) users = getLocalUserLoginFallback();
+  if (!users.length) {
+    box.innerHTML = `<div class="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลใน Sheet UserLogin — กดเพิ่ม User/แผนก เพื่อสร้างรายการใหม่</div>
+      <table class="userlogin-table"><tbody id="userlogin-tbody"></tbody></table>`;
+    return;
+  }
 
   const rows = users.map(u => buildUserLoginRowHtml(u)).join("");
   box.innerHTML = `
@@ -549,43 +510,32 @@ async function saveUserLoginSettingsOnly() {
 async function loadDepartmentSummarySettings() {
   const box = document.getElementById("setting-dept-summary-cards");
   if (!box) return;
-  box.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด Department Setting...</div>`;
+  box.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด DepartmentSetting จาก Sheet...</div>`;
   try {
     const res = await callAppsScript("getDepartmentSettings", {});
     if (res && res.success) {
       globalDeptSettings = res.settings || [];
       renderDepartmentSettingCards(res, "");
     } else {
-      renderDepartmentSettingCards(getLocalDepartmentSettingFallback(), "โหลดจาก Apps Script ไม่สำเร็จ แต่สามารถแก้ไขในหน้านี้ได้ก่อน แล้วกดบันทึกหลัง Deploy Code.js ล่าสุด");
+      renderDepartmentSettingLoadError((res && res.error) || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
     console.warn("loadDepartmentSummarySettings failed", e);
-    renderDepartmentSettingCards(getLocalDepartmentSettingFallback(), "โหลด Setting ไม่สำเร็จ: " + e.message + " — ระบบแสดงรายการเริ่มต้นให้แก้ไขได้");
+    renderDepartmentSettingLoadError(e.message);
   }
 }
 
-function getLocalDepartmentSettingFallback() {
-  const departments = Array.from(new Set((DEPARTMENTS || []).filter(d => d && d !== "อื่นๆ")));
-  const settings = [];
-  departments.forEach(dept => {
-    (EQUIPMENTS || []).forEach(eq => {
-      settings.push({
-        department: dept,
-        headEmail: "",
-        equipment: eq,
-        targetPerDay: 0,
-        active: true
-      });
-    });
-  });
-  return {
-    success: true,
-    settings,
-    departments,
-    equipmentList: EQUIPMENTS || [],
-    localFallback: true
-  };
+function renderDepartmentSettingLoadError(message) {
+  const box = document.getElementById("setting-dept-summary-cards");
+  if (!box) return;
+  box.innerHTML = `<div class="p-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl">
+    โหลด DepartmentSetting จาก Google Sheet ไม่สำเร็จ<br>
+    <span class="text-xs">${escapeHTML(message || "")}</span><br>
+    <span class="text-xs">ระบบจะไม่ใช้ sample/fallback data — กรุณาตรวจ Apps Script และ Deploy version ล่าสุด</span>
+  </div>`;
 }
+
+
 
 function groupDepartmentSettings(settings) {
   const groups = {};
@@ -619,7 +569,7 @@ function renderDepartmentSettingCards(res = {}, softMessage = "") {
 
   const helpHtml = `
     <div class="dept-setting-help">
-      <b>แก้ไขได้จากหน้านี้โดยตรง:</b> กดชื่อแผนกเพื่อเปิดรายละเอียด → ใส่ Gmail หัวหน้างาน → ใส่ Target ของแต่ละเครื่องมือ → กด <b>บันทึก KPI</b> หรือ <b>บันทึก Setting</b>
+      <b>ข้อมูลมาจาก Google Sheet โดยตรง:</b> กดชื่อแผนกเพื่อเปิดรายละเอียด → ใส่ Gmail หัวหน้างาน → ใส่ Target ของแต่ละเครื่องมือ → กด <b>บันทึก KPI</b> หรือ <b>บันทึก Setting</b>
     </div>`;
 
   const msgHtml = softMessage ? `<div class="dept-setting-error-soft">${escapeHTML(softMessage)}</div>` : "";
@@ -778,42 +728,33 @@ async function saveDepartmentSettingOnly() {
 
 async function saveSettings(options = {}) {
   const silent = !!(options && options.silent);
-  const current = getSettings();
-  const s = Object.assign(current, {
-    appsScriptUrl: current.appsScriptUrl || INITIAL_APPS_SCRIPT_URL || "",
-    sheetLink: (document.getElementById("setting-sheet-link") || {}).value || "",
+  const cfg = window.DAILY_CHECK_CONFIG || {};
+  const s = {
+    sheetLink: (document.getElementById("setting-sheet-link") || {}).value || cfg.SHEET_LINK || "",
     adminEmail: (document.getElementById("setting-admin-email") || {}).value || "",
     rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
     summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
-  });
+  };
 
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-  applySettingsToConfig();
-  setupBranding();
-
-  if (!silent) showLoading("กำลังบันทึก Setting...", "กำลังบันทึกข้อมูล Setting และ Department KPI");
+  if (!silent) showLoading("กำลังบันทึก Setting...", "กำลังบันทึกข้อมูลลง Google Sheet โดยตรง");
 
   try {
-    // Save main setting to backend via config.js URL
     await callAppsScript("saveSettings", {
       adminEmail: s.adminEmail,
-      spreadsheetId: extractSpreadsheetId(s.sheetLink),
+      spreadsheetId: extractSpreadsheetId(s.sheetLink) || (cfg.SPREADSHEET_ID || ""),
+      sheetLink: s.sheetLink,
       rootFolderId: s.rootFolderId,
       summaryTime: s.summaryTime
     });
 
     const userRows = getUserLoginRowsFromEditor();
-    if (userRows.length) {
-      await callAppsScript("saveUserLoginSettings", { users: userRows });
-    }
+    if (userRows.length) await callAppsScript("saveUserLoginSettings", { users: userRows });
 
     const deptRows = getDepartmentSettingRowsFromCards();
     const resDept = await callAppsScript("saveDepartmentSettings", { settings: deptRows, equipmentList: EQUIPMENTS });
-    if (resDept && resDept.success) {
-      globalDeptSettings = resDept.settings || globalDeptSettings;
-    }
+    if (resDept && resDept.success) globalDeptSettings = resDept.settings || globalDeptSettings;
 
-    if (!silent) alert("บันทึก Setting สำเร็จ");
+    if (!silent) alert("บันทึก Setting ลง Sheet สำเร็จ");
   } catch (e) {
     if (!silent) alert("บันทึก Setting ไม่สำเร็จ: " + e.message);
   } finally {
@@ -922,22 +863,8 @@ function setupLogin() {
   }
 }
 
-function fallbackLoginUser(code) {
-  if (allowedLoginCodes().map(x=>String(x).toUpperCase()).includes(String(code).toUpperCase())) {
-    return { code, name: code, department: "ALL", role: "user", source: "local" };
-  }
+/* fallbackLoginUser removed in FINAL V5.20: all data comes from Google Sheet. */
 
-  const s = getSettings();
-  const lines = String(s.loginUsers || "").split(/\n/).map(x => x.trim()).filter(Boolean);
-  for (const line of lines) {
-    if (/^code\s*,/i.test(line)) continue;
-    const [c, name, department, role, active] = line.split(",").map(x => (x || "").trim());
-    if (String(c).toUpperCase() === String(code).toUpperCase() && String(active || "TRUE").toUpperCase() !== "FALSE") {
-      return { code: c, name: name || c, department: department || "ALL", role: role || "user", source: "local-map" };
-    }
-  }
-  return null;
-}
 
 async function submitLoginCode() {
   const input = document.getElementById("login-code-input");
@@ -2542,8 +2469,8 @@ function logPageLeave() {
 
   // Use sendBeacon for reliable delivery on page close
   const appsScriptUrl = window.DAILY_CHECK_CONFIG && window.DAILY_CHECK_CONFIG.APPS_SCRIPT_URL;
-  const isMock = !appsScriptUrl || appsScriptUrl.includes("PASTE_APPS_SCRIPT");
-  if (isMock) return;
+  const isDisabledLocalSample = !appsScriptUrl || appsScriptUrl.includes("PASTE_APPS_SCRIPT");
+  if (isDisabledLocalSample) return;
 
   const payload = JSON.stringify({
     action: "log",
