@@ -362,6 +362,24 @@ function applySettingsToConfig() {
 }
 
 
+
+async function checkBackendVersionNow() {
+  showLoading("กำลังตรวจ Backend...", "กำลังตรวจว่า Apps Script เป็นเวอร์ชันล่าสุดหรือไม่");
+  try {
+    const res = await callAppsScript("getVersion", {});
+    const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
+    if (String(v).includes("V5.19_FORCE_CLEAN_BACKEND")) {
+      alert("Backend OK: " + v);
+    } else {
+      alert("Backend ยังไม่ใช่ V5.19\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+    }
+  } catch (e) {
+    alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
+  } finally {
+    hideLoading(true);
+  }
+}
+
 function toggleSettingSection(btn) {
   const section = btn.closest(".setting-section");
   if (section) section.classList.toggle("open");
@@ -394,7 +412,7 @@ function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.17 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.19 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
