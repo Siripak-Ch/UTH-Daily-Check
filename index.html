@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Check รพ.อุทัยธานี</title>
+  <link rel="icon" type="image/png" href="logo-uth.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            uth: {
+              50: '#fdf4fc', 100: '#fae7f7', 200: '#f5ceee', 300: '#eba8df',
+              400: '#dd74c8', 500: '#cd45af', 600: '#b12a8e', 700: '#8a2b84',
+              800: '#731e67', 900: '#601d57'
+            }
+          },
+          fontFamily: { sans: ['Sarabun', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body { background-color:#f8fafc; font-family:'Sarabun', sans-serif; }
+    .page-hidden { display:none !important; }
+    .custom-checkbox input:checked + div { background-color:#8a2b84; border-color:#8a2b84; }
+    .custom-checkbox input:checked + div svg { opacity:1; }
+    .custom-radio input:checked + div { border-color:#8a2b84; background-color:#fdf4fc; }
+    .custom-radio input:checked + div .radio-dot { background-color:#8a2b84; }
+    .table-scroll::-webkit-scrollbar { width:6px; height:6px; }
+    .table-scroll::-webkit-scrollbar-thumb { background-color:#cbd5e1; border-radius:10px; }
+    .sortable-th:hover { background-color:#f1f5f9; cursor:pointer; }
+
+    /* PDF Preview Template */
+    #pdf-template { width: 1123px; min-height: 794px; background: white; color: black; padding: 26px; font-family: 'Sarabun', sans-serif; }
+    .pdf-table { width:100%; border-collapse:collapse; font-size:15px; }
+    .pdf-table th, .pdf-table td { border:1px solid #111; padding:6px 8px; vertical-align:top; }
+    .pdf-table { page-break-inside: avoid; }
+    .pdf-table th { background:#d9d9d9; font-weight:700; text-align:center; }
+    .pdf-section { background:#bfbfbf; font-weight:700; text-align:center; }
+    .pdf-small { font-size:13px; }
+    .pdf-sign-box { height:58px; }
+  
+    /* v14 responsive form sizing */
+    @media (min-width: 1024px) {
+      #form-page { max-width: 980px !important; }
+      #daily-form select, #daily-form input { min-height: 48px; }
+    }
+    @media (max-width: 640px) {
+      #form-page { border-radius: 1.25rem !important; }
+      #daily-form { gap: 1rem; }
+      #daily-form label { font-size: .82rem; }
+      #daily-form input, #daily-form select { font-size: .92rem; padding: .85rem 1rem; }
+    }
+
+  
+    /* FINAL V4: mobile dashboard card view */
+    @media (max-width: 768px) {
+      #dashboard-page { padding-bottom: 1rem; }
+      #dashboard-page .grid { gap: .75rem; }
+      #dash-colgroup, #dash-table-body + * { display: none; }
+      #dash-table-body { display: block; }
+      #dash-table-body tr {
+        display: block;
+        margin: .75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 6px 16px rgba(15,23,42,.06);
+        overflow: hidden;
+      }
+      #dash-table-body td {
+        display: flex;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .55rem .8rem !important;
+        border-right: 0 !important;
+        border-bottom: 1px solid #f1f5f9;
+        max-width: none !important;
+        white-space: normal;
+        font-size: .78rem;
+      }
+      #dash-table-body td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        color: #64748b;
+        flex: 0 0 42%;
+      }
+      #dash-table-body td:last-child { border-bottom: 0; justify-content: center; }
+      #dash-table-body td:last-child::before { display: none; }
+      table thead { display: none; }
+      #pagination-bar { margin-top: .5rem; border-radius: 0 0 1.5rem 1.5rem; }
+    }
+
+    /* FINAL V4: login overlay */
+    #login-overlay { backdrop-filter: blur(8px); }
+    .settings-card input, .settings-card textarea {
+      width:100%; border:1px solid #cbd5e1; border-radius:14px; padding:.85rem 1rem; outline:none; background:#fff;
+    }
+    .settings-card input:focus, .settings-card textarea:focus { border-color:#b12a8e; box-shadow:0 0 0 3px rgba(177,42,142,.12); }
+
+  
+    /* FINAL V5 header spacing */
+    @media (max-width: 1280px) {
+      header .max-w-7xl { max-width: 100%; }
+    }
+    @media (min-width: 640px) and (max-width: 1180px) {
+      #header-clock { order: -1; width: 100%; text-align: left; }
+      #tab-form-btn, #tab-dash-btn, #tab-settings-btn { padding-left: .7rem; padding-right: .7rem; font-size: .86rem; }
+    }
+
+  
+    /* FINAL V5.4: Detail modal mobile + image collage */
+    .uth-collage {
+      display: grid;
+      gap: 8px;
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+    .uth-collage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      display: block;
+      background: #f1f5f9;
+    }
+    .uth-collage.count-1 { grid-template-columns: 1fr; height: 290px; }
+    .uth-collage.count-2 { grid-template-columns: 1fr 1fr; height: 260px; }
+    .uth-collage.count-3 { grid-template-columns: 1.25fr .9fr; grid-template-rows: 1fr 1fr; height: 290px; }
+    .uth-collage.count-3 img:first-child { grid-row: span 2; }
+    .uth-collage.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 300px; }
+    .uth-collage.count-more { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 300px; }
+    .uth-collage-more {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,23,42,.55);
+      color: white;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .uth-collage-item { position: relative; min-width: 0; min-height: 0; }
+
+    @media (max-width: 640px) {
+      #detail-modal { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; }
+      #detail-modal > div {
+        width: 100% !important;
+        max-width: none !important;
+        height: 100vh !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+      }
+      #detail-modal .p-6 { padding: 1rem !important; }
+      #detail-modal .grid.grid-cols-2 { grid-template-columns: 1fr !important; gap: .35rem !important; }
+      #detail-modal .grid.grid-cols-2 > div:nth-child(even) { text-align: left !important; font-weight: 800; }
+      .uth-collage.count-1, .uth-collage.count-2, .uth-collage.count-3, .uth-collage.count-4, .uth-collage.count-more { height: 230px; }
+      .md-check-row { grid-template-columns: 1fr !important; }
+      #settings-page .settings-card .p-5, #settings-page .settings-card .sm\:p-8 { padding: 1rem !important; }
+      #settings-page button { width: 100%; }
+    }
+
+  
+    /* FINAL V5.11: Global loading popup */
+    .uth-loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: rgba(15, 23, 42, 0.62);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .uth-loading-overlay.show { display: flex; }
+    .uth-loading-card {
+      width: min(92vw, 430px);
+      background: #fff;
+      border-radius: 26px;
+      padding: 30px 24px;
+      text-align: center;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(255,255,255,.7);
+    }
+    .uth-loading-spinner {
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      margin: 0 auto 18px;
+      border: 5px solid #f3d9ef;
+      border-top-color: #a8228e;
+      animation: uthSpin .8s linear infinite;
+    }
+    @keyframes uthSpin { to { transform: rotate(360deg); } }
+    .uth-loading-title {
+      color: #851d78;
+      font-weight: 900;
+      font-size: 1.18rem;
+      margin: 0 0 6px;
+    }
+    .uth-loading-detail {
+      color: #64748b;
+      font-size: .92rem;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .uth-loading-progress {
+      width: 100%;
+      height: 7px;
+      margin-top: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #f3e8ff;
+    }
+    .uth-loading-progress > div {
+      width: 45%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #8a2b84, #c026a4);
+      animation: uthProgress 1.25s ease-in-out infinite;
+    }
+    @keyframes uthProgress {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(240%); }
+    }
+
+  
+    /* FINAL V5.12: Department KPI dashboard */
+    .dept-kpi-bar-bg { height: 9px; border-radius: 999px; background:#f3e8ff; overflow:hidden; }
+    .dept-kpi-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#7b1b72,#c026a4); transition:width .35s ease; }
+    @media (max-width: 640px) {
+      #dept-kpi-list { grid-template-columns: 1fr !important; }
+      #dept-kpi-card { padding: 1rem !important; border-radius: 1.25rem !important; }
+    }
+
+  
+    /* FINAL V5.13: Department setting accordion */
+    .dept-setting-card { border:1px solid #e8d5ee; border-radius:20px; overflow:hidden; background:#fff; box-shadow:0 6px 18px rgba(124,24,112,.06); }
+    .dept-setting-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:linear-gradient(90deg,#fdf4fc,#ffffff); cursor:pointer; }
+    .dept-setting-title { font-weight:900; color:#1e293b; display:flex; align-items:center; gap:8px; min-width:0; }
+    .dept-setting-body { display:none; padding:16px; border-top:1px solid #f3e8ff; background:#fff; }
+    .dept-setting-card.open .dept-setting-body { display:block; }
+    .dept-setting-card.open .dept-arrow { transform:rotate(180deg); }
+    .dept-arrow { transition:.2s ease; color:#8a2b84; }
+    .equipment-target-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    @media (min-width: 1024px) { .equipment-target-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 640px) {
+      .equipment-target-grid { grid-template-columns:1fr; }
+      .dept-setting-head { padding:12px; }
+      .dept-setting-body { padding:12px; }
+    }
+
+  
+    /* FINAL V5.14: Inline department setting editor */
+    .dept-setting-help {
+      border: 1px solid #e0e7ff;
+      background: #eef2ff;
+      color: #334155;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .dept-setting-error-soft {
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .dept-delete-btn {
+      color:#dc2626;
+      border:1px solid #fecaca;
+      background:#fef2f2;
+      border-radius:10px;
+      padding:6px 9px;
+      font-size:11px;
+      font-weight:800;
+    }
+
+  
+    /* FINAL V5.15: Compact KPI setting fields */
+    .dept-setting-card { border-radius: 16px !important; }
+    .dept-setting-head { padding: 9px 12px !important; min-height: 44px; }
+    .dept-setting-title { font-size: .92rem; }
+    .dept-setting-body { padding: 10px 12px !important; }
+    .equipment-target-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 6px !important;
+    }
+    @media (min-width: 1280px) {
+      .equipment-target-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+    }
+    .equipment-target-grid > div {
+      padding: 7px 8px !important;
+      border-radius: 12px !important;
+    }
+    .equipment-target-grid label {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+      margin-bottom: 4px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dept-equip-target {
+      height: 32px !important;
+      padding: 4px 8px !important;
+      font-size: 12px !important;
+      border-radius: 10px !important;
+      text-align: center;
+    }
+    .dept-head-email,
+    .dept-active {
+      height: 38px !important;
+      padding: 6px 10px !important;
+      border-radius: 12px !important;
+      font-size: 12px !important;
+    }
+    .dept-setting-help,
+    .dept-setting-error-soft {
+      padding: 8px 10px !important;
+      font-size: 11px !important;
+      border-radius: 12px !important;
+    }
+    .dept-delete-btn { padding: 4px 7px !important; font-size: 10px !important; }
+    @media (max-width: 640px) {
+      .equipment-target-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .dept-setting-head { padding: 8px 10px !important; }
+      .dept-setting-body { padding: 9px !important; }
+    }
+
+  
+    /* FINAL V5.16: KPI Department Bar Chart */
+    #dept-kpi-list { display:block !important; }
+    .kpi-chart-wrap { overflow-x:auto; padding: 8px 2px 0; }
+    .kpi-chart {
+      min-width: 900px;
+      height: 330px;
+      display: flex;
+      align-items: flex-end;
+      gap: 18px;
+      padding: 18px 12px 12px 12px;
+      border-left: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      background:
+        linear-gradient(to top, #eef2f7 1px, transparent 1px) 0 0/100% 20%,
+        #fff;
+      border-radius: 18px;
+    }
+    .kpi-bar-group {
+      flex: 0 0 56px;
+      height: 245px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 7px;
+      position: relative;
+    }
+    .kpi-bar {
+      width: 18px;
+      border-radius: 8px 8px 0 0;
+      min-height: 4px;
+      position: relative;
+      transition: .25s ease;
+    }
+    .kpi-bar.target { background:#e2e8f0; }
+    .kpi-bar.actual { background:linear-gradient(180deg,#6d28d9,#b4239a); }
+    .kpi-bar:hover { filter: brightness(.95); transform: translateY(-2px); }
+    .kpi-bar-label {
+      position:absolute;
+      top:-18px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:10px;
+      font-weight:900;
+      white-space:nowrap;
+      color:#7b1b72;
+    }
+    .kpi-dept-label {
+      position:absolute;
+      top:255px;
+      left:50%;
+      transform:translateX(-50%) rotate(-32deg);
+      transform-origin:top center;
+      font-size:10px;
+      font-weight:800;
+      color:#475569;
+      width:110px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-align:right;
+    }
+    .kpi-tooltip {
+      position:absolute;
+      display:none;
+      bottom:100%;
+      left:50%;
+      transform:translate(-50%,-10px);
+      background:#111827;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:11px;
+      white-space:nowrap;
+      z-index:20;
+      box-shadow:0 10px 25px rgba(15,23,42,.25);
+    }
+    .kpi-bar-group:hover .kpi-tooltip { display:block; }
+    .kpi-legend { display:flex; align-items:center; gap:14px; justify-content:flex-end; font-size:11px; color:#64748b; font-weight:800; }
+    .kpi-dot { width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:middle; }
+    .kpi-dot.target { background:#e2e8f0; }
+    .kpi-dot.actual { background:#7b1b72; }
+    .userlogin-table { width:100%; min-width:760px; border-collapse:collapse; font-size:12px; }
+    .userlogin-table th { background:#eff6ff; color:#1d4ed8; text-align:left; padding:9px; border-bottom:1px solid #dbeafe; font-weight:900; }
+    .userlogin-table td { padding:6px; border-bottom:1px solid #eff6ff; }
+    .userlogin-table input, .userlogin-table select {
+      width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:7px 8px; font-size:12px; outline:none; background:white;
+    }
+    .userlogin-table input:focus, .userlogin-table select:focus { border-color:#2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+    @media (max-width:640px){
+      .kpi-chart { min-width:760px; gap:12px; height:300px; }
+      .kpi-bar-group { flex-basis:48px; height:220px; }
+      .kpi-dept-label { top:230px; width:90px; font-size:9px; }
+    }
+
+  
+    /* FINAL V5.18: setting collapsible + KPI overlay bar */
+    .setting-section {
+      border: 1px solid #f0d8ef;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 8px 22px rgba(124,24,112,.055);
+    }
+    .setting-section-head {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: linear-gradient(90deg,#fdf4fc,#ffffff);
+      color: #7b1b72;
+      font-weight: 900;
+      text-align: left;
+      cursor: pointer;
+    }
+    .setting-section-body {
+      display: none;
+      padding: 16px;
+      border-top: 1px solid #f3e8ff;
+    }
+    .setting-section.open .setting-section-body { display: block; }
+    .setting-section-arrow { transition: transform .2s ease; }
+    .setting-section.open .setting-section-arrow { transform: rotate(180deg); }
+
+    #dept-kpi-list { display:block !important; }
+    .kpi-chart-wrap { overflow-x:auto; padding: 10px 2px 0; }
+    .kpi-chart {
+      min-width: 940px;
+      height: 345px;
+      display: flex;
+      align-items: flex-end;
+      gap: 22px;
+      padding: 22px 16px 14px 16px;
+      border-left: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      background:
+        linear-gradient(to top, #eef2f7 1px, transparent 1px) 0 0/100% 20%,
+        #fff;
+      border-radius: 18px;
+    }
+    .kpi-bar-group {
+      flex: 0 0 62px;
+      height: 255px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .kpi-bar-stack {
+      position: relative;
+      width: 42px;
+      height: 230px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .kpi-bar-target {
+      position: absolute;
+      bottom: 0;
+      width: 36px;
+      border-radius: 9px 9px 0 0;
+      background: #dfe6ef;
+      box-shadow: inset 0 0 0 1px rgba(148,163,184,.25);
+      min-height: 5px;
+    }
+    .kpi-bar-actual {
+      position: absolute;
+      bottom: 0;
+      width: 24px;
+      border-radius: 8px 8px 0 0;
+      background: #92278f;
+      min-height: 5px;
+      box-shadow: 0 7px 16px rgba(146,39,143,.24);
+    }
+    .kpi-bar-percent {
+      position:absolute;
+      top:-28px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:11px;
+      font-weight:900;
+      color:#92278f;
+      background:#fdf4fc;
+      border:1px solid #f0d8ef;
+      border-radius:999px;
+      padding:3px 7px;
+      white-space:nowrap;
+    }
+    .kpi-dept-label {
+      position:absolute;
+      top:262px;
+      left:50%;
+      transform:translateX(-50%) rotate(-32deg);
+      transform-origin:top center;
+      font-size:10px;
+      font-weight:800;
+      color:#475569;
+      width:120px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-align:right;
+    }
+    .kpi-tooltip {
+      position:absolute;
+      display:none;
+      bottom:100%;
+      left:50%;
+      transform:translate(-50%,-10px);
+      background:#111827;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:11px;
+      white-space:nowrap;
+      z-index:20;
+      box-shadow:0 10px 25px rgba(15,23,42,.25);
+    }
+    .kpi-bar-group:hover .kpi-tooltip { display:block; }
+    .kpi-legend { display:flex; align-items:center; gap:14px; justify-content:flex-end; font-size:11px; color:#64748b; font-weight:800; }
+    .kpi-dot { width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:middle; }
+    .kpi-dot.target { background:#dfe6ef; }
+    .kpi-dot.actual { background:#92278f; }
+    @media (max-width:640px) {
+      .setting-section-head { padding: 12px; font-size: 13px; }
+      .setting-section-body { padding: 12px; }
+      .kpi-chart { min-width: 780px; gap: 15px; height: 315px; }
+      .kpi-bar-group { flex-basis: 54px; height: 230px; }
+      .kpi-bar-stack { height: 205px; }
+      .kpi-dept-label { top:236px; width:96px; font-size:9px; }
+    }
+
+  </style>
+</head>
+<body class="text-slate-800 flex flex-col items-center min-h-screen">
+
+  <!-- GLOBAL LOADING POPUP -->
+  <div id="global-loading-overlay" class="uth-loading-overlay" aria-live="polite" aria-busy="true">
+    <div class="uth-loading-card">
+      <div class="uth-loading-spinner"></div>
+      <h3 id="global-loading-title" class="uth-loading-title">กำลังประมวลผล...</h3>
+      <p id="global-loading-detail" class="uth-loading-detail">กรุณารอสักครู่</p>
+      <div class="uth-loading-progress"><div></div></div>
+    </div>
+  </div>
+
+
+  <!-- LOGIN OVERLAY -->
+  <div id="login-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div class="w-full max-w-[505px] bg-white rounded-[28px] shadow-2xl border border-slate-100 p-8 sm:p-10 text-center">
+      <div class="mx-auto w-24 h-24 rounded-3xl bg-white shadow-xl border border-slate-100 flex items-center justify-center mb-6">
+        <img src="logo-uth.png" class="w-16 h-16 object-contain" alt="UTH">
+      </div>
+
+      <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">UTH Daily Check</h1>
+      <p class="mt-2 text-sm sm:text-base font-black tracking-widest text-slate-400 uppercase">Medical Equipment Service System</p>
+
+      <div class="mt-9 text-left">
+        <label class="block text-xs font-black text-slate-500 uppercase tracking-wide mb-2">Login Code Only</label>
+        <div class="relative">
+          <i data-lucide="id-card" class="w-5 h-5 text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
+          <input id="login-code-input" type="text" inputmode="text" autocomplete="off" placeholder="Enter department code"
+            class="w-full h-16 pl-14 pr-5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-xl font-bold tracking-wide outline-none focus:border-uth-500 focus:ring-4 focus:ring-uth-100 shadow-sm">
+        </div>
+        <p class="mt-2 text-xs text-slate-400">ใช้รหัสแผนกเท่านั้น เช่น ADMF, ADMM, ER, OR</p>
+      </div>
+
+      <label class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <input id="login-remember" type="checkbox" checked class="accent-uth-600"> Remember this device
+      </label>
+
+      <p id="login-error" class="hidden mt-3 text-sm text-red-600 font-bold">รหัสไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน</p>
+
+      <button onclick="submitLoginCode()" class="mt-6 w-full h-16 rounded-2xl bg-slate-950 hover:bg-uth-800 text-white text-lg font-black shadow-xl transition-all active:scale-[.98]">
+        Login / Check ID →
+      </button>
+
+      <div class="mt-8 text-sm text-slate-500">
+        <div>Don't have an account?</div>
+        <button onclick="showRequestAccessInfo()" class="mt-2 text-indigo-600 font-black hover:underline">Request Department Code</button>
+      </div>
+
+      </div>
+    </div>
+  </div>
+
+<header class="w-full bg-gradient-to-r from-uth-800 to-uth-600 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6">
+      <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 py-3">
+        <div class="flex items-center gap-3">
+          <div class="bg-white p-1 rounded-full w-12 h-12 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+            <img id="app-logo" src="" alt="UTH Logo" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <h1 id="app-hospital" class="text-lg sm:text-xl font-bold leading-tight">โรงพยาบาลอุทัยธานี</h1>
+            <p id="app-system" class="text-xs text-uth-100 font-light mt-0.5">ระบบ Daily Check เครื่องมือแพทย์</p>
+          </div>
+        </div>
+        <div class="hidden sm:flex flex-wrap items-center justify-end gap-2 xl:gap-3">
+          <div id="header-clock" class="text-xs text-uth-100 text-right min-w-[145px]">
+            <div id="clock-date" class="font-semibold text-white text-sm"></div>
+            <div id="clock-time" class="text-uth-200"></div>
+          </div>
+          <button onclick="switchTab('form')" id="tab-form-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all bg-white/20 text-white flex items-center gap-2"><i data-lucide="clipboard-edit" class="w-4 h-4"></i> บันทึกการตรวจสอบประจำวัน</button>
+          <button onclick="switchTab('dashboard')" id="tab-dash-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard / Export</button>
+          <button onclick="switchTab('settings')" id="tab-settings-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> Setting</button>
+          <button onclick="logoutDailyCheck()" id="logout-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+      <div class="flex sm:hidden border-t border-uth-500/50">
+        <button onclick="switchTab('form')" id="tab-form-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-white text-white">บันทึกการตรวจ</button>
+        <button onclick="switchTab('dashboard')" id="tab-dash-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">Dashboard</button>
+        <button onclick="switchTab('settings')" id="tab-settings-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">Setting</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 flex flex-col relative">
+
+    <!-- FORM PAGE -->
+    <main id="form-page" class="flex-1 transition-all duration-300 w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+      <div class="p-5 sm:p-8 lg:p-10">
+        <div class="flex items-center gap-2 mb-6 text-uth-800 border-b border-slate-100 pb-4">
+          <i data-lucide="file-check-2" class="w-6 h-6"></i>
+          <h2 class="text-xl font-bold">บันทึกการตรวจสอบประจำวัน</h2>
+        </div>
+
+        <form id="daily-form" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4 text-uth-600"></i> แผนก / หน่วยงาน</label>
+              <select id="department" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm"><option value="" disabled selected>-- เลือกแผนก --</option></select>
+              <div id="other-dept-container" class="hidden mt-2"><input type="text" id="other-dept" placeholder="ระบุชื่อแผนก..." class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm"></div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5"><i data-lucide="stethoscope" class="w-4 h-4 text-uth-600"></i> ประเภทเครื่องมือ</label>
+              <select id="equipment" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm"><option value="" disabled selected>-- เลือกประเภทเครื่องมือ --</option></select>
+            </div>
+          </div>
+
+          <!-- Row 2: SN / ID CODE / Asset number -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="space-y-2 min-w-0">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="hash" class="w-4 h-4 text-uth-600"></i> รหัสเครื่อง / SN
+              </label>
+              <input type="text" id="idCode" placeholder="Serial number / SN" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
+            </div>
+
+            <div class="space-y-2 min-w-0">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="barcode" class="w-4 h-4 text-uth-600"></i> ID CODE <span class="text-xs text-slate-400 font-medium">(ไม่บังคับ)</span>
+              </label>
+              <input type="text" id="deviceIdCode" placeholder="ID CODE" class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
+            </div>
+
+            <div class="space-y-2 min-w-0">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="clipboard-list" class="w-4 h-4 text-uth-600"></i> หมายเลขครุภัณฑ์ <span class="text-xs text-slate-400 font-medium">(ไม่บังคับ)</span>
+              </label>
+              <input type="text" id="assetNo" placeholder="Asset number / หมายเลขครุภัณฑ์" class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm">
+            </div>
+          </div>
+
+          <!-- Row 3: Date / Inspector -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-2 min-w-0">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-uth-600"></i> วันที่ตรวจสอบ
+              </label>
+              <input type="date" id="date" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm">
+            </div>
+
+            <div class="space-y-2 min-w-0">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="user-check" class="w-4 h-4 text-uth-600"></i> ชื่อผู้ตรวจสอบ
+              </label>
+              <input type="text" id="inspector" placeholder="ชื่อ-นามสกุล" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm">
+            </div>
+          </div>
+
+          <div id="checklist-container" class="pt-4 border-t border-slate-200 hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5"><i data-lucide="check-square" class="w-4 h-4 text-uth-600"></i> รายการตรวจสอบ (Checklist)</label>
+              <div class="flex gap-2">
+                <button type="button" id="btn-select-all" class="px-3 py-2 rounded-xl bg-uth-50 text-uth-700 border border-uth-200 text-xs font-bold hover:bg-uth-100">Select all</button>
+                <button type="button" id="btn-clear-all" class="px-3 py-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 text-xs font-bold hover:bg-slate-100">Clear</button>
+              </div>
+            </div>
+            <div class="bg-uth-50 rounded-3xl p-4 sm:p-5 border border-uth-100 shadow-sm">
+              <div id="checklist-items" class="space-y-2.5"></div>
+              
+
+          <div class="pt-4 border-t border-slate-200">
+            <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-3"><i data-lucide="activity" class="w-4 h-4 text-uth-600"></i> สถานะเครื่องมือ</label>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <label class="custom-radio cursor-pointer">
+                <input type="radio" name="status" value="พร้อมใช้งาน" class="peer sr-only" checked>
+                <div class="p-3.5 border border-slate-200 rounded-2xl flex items-center gap-2 sm:gap-3 transition-all">
+                  <div class="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center shrink-0"><div class="radio-dot w-2 h-2 rounded-full bg-transparent"></div></div>
+                  <span class="text-sm font-medium text-slate-700">พร้อมใช้งาน</span>
+                </div>
+              </label>
+              <label class="custom-radio cursor-pointer">
+                <input type="radio" name="status" value="ชำรุด" class="peer sr-only">
+                <div class="p-3.5 border border-slate-200 rounded-2xl flex items-center gap-2 sm:gap-3 transition-all">
+                  <div class="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center shrink-0"><div class="radio-dot w-2 h-2 rounded-full bg-transparent"></div></div>
+                  <span class="text-sm font-medium text-red-600">ชำรุด / แจ้งซ่อม</span>
+                </div>
+              </label>
+            </div>
+            <div id="broken-zone" class="mb-4 hidden">
+              <label class="text-sm font-semibold text-red-800 mb-1.5 block">รายละเอียดอาการชำรุด <span class="text-red-500">*</span></label>
+              <textarea id="note" rows="2" placeholder="ระบุอาการชำรุด..." class="w-full p-3 border border-red-200 bg-red-50 rounded-xl outline-none text-sm"></textarea>
+            </div>
+
+            <!-- หมายเหตุเพิ่มเติม (optional) -->
+            <div class="space-y-2">
+              <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5"><i data-lucide="message-square" class="w-4 h-4 text-uth-600"></i> หมายเหตุเพิ่มเติม <span class="text-slate-400 font-normal text-xs">(ไม่บังคับ)</span></label>
+              <textarea id="extra-note" rows="2" placeholder="ระบุหมายเหตุเพิ่มเติม..." class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none shadow-sm resize-none"></textarea>
+            </div>
+
+            <!-- ถ่ายรูป/วิดีโอ 1-5 รูป -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <label class="text-sm font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5"><i data-lucide="camera" class="w-4 h-4"></i> ถ่ายรูป/แนบรูปภาพเครื่องมือ <span class="text-red-500">*</span></label>
+              <label for="image-upload" class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-300 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-slate-100 transition-all relative overflow-hidden group">
+                <div id="image-placeholder" class="flex flex-col items-center justify-center py-4">
+                  <i data-lucide="image-plus" class="w-7 h-7 text-slate-400 mb-1.5 group-hover:scale-110 transition-transform"></i>
+                  <p class="text-sm text-slate-600 font-medium">กดเพื่อถ่ายรูป หรือ เลือกรูปภาพ</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">1-5 รูป</p>
+                </div>
+                <input id="image-upload" type="file" accept="image/*" multiple class="hidden" />
+              </label>
+              <div id="image-previews" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2"></div>
+              <button type="button" id="btn-remove-image" class="hidden mt-2 text-xs text-red-600 font-medium underline">ลบรูปทั้งหมด</button>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-uth-700 to-uth-600 hover:from-uth-800 hover:to-uth-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98] flex justify-center items-center gap-2 text-lg">
+              <i data-lucide="send" class="w-5 h-5"></i> บันทึกข้อมูล
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- SUCCESS PAGE -->
+    <main id="success-page" class="flex-1 flex flex-col items-center justify-center text-center page-hidden bg-white rounded-3xl shadow-xl p-8 max-w-lg mx-auto w-full my-auto">
+      <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-green-100"><i data-lucide="check-circle" class="w-14 h-14 text-green-500"></i></div>
+      <h2 class="text-2xl font-bold text-slate-800 mb-2">บันทึกสำเร็จ</h2>
+      <p class="text-slate-500 text-sm mb-8">ข้อมูลและรูปภาพ <span id="success-id" class="font-bold text-uth-700"></span> ถูกส่งเข้าระบบแล้ว</p>
+      <button id="new-record-btn" class="w-full bg-uth-50 text-uth-700 border border-uth-200 font-bold py-4 rounded-2xl active:scale-[0.98] flex justify-center items-center gap-2">
+        <i data-lucide="plus-square" class="w-5 h-5"></i> ตรวจสอบเครื่องมือถัดไป
+      </button>
+    </main>
+
+    <!-- DASHBOARD PAGE -->
+    <main id="dashboard-page" class="flex-1 page-hidden w-full flex flex-col">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">สรุปข้อมูล Daily Check เครื่องมือแพทย์ทั้งหมด</h2>
+          <p class="text-sm text-slate-500">กรองข้อมูล / ดูสัดส่วนประเภทเครื่องมือ / Preview และ Export PDF รายวัน</p>
+        </div>
+        <div class="flex flex-wrap gap-2 self-end sm:self-auto justify-end">
+          <button onclick="openMonthlySummary()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> รายเดือน</button>
+          <button onclick="openPdfPreview()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i> Export PDF</button>
+          <button onclick="exportAllExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel</button>
+          <button onclick="downloadTemplate()" class="px-3 py-2 bg-white hover:bg-slate-50 text-uth-700 border border-uth-200 rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="table" class="w-4 h-4"></i> Template Excel</button>
+          <button onclick="loadDashboardData()" class="p-2.5 bg-white rounded-full shadow hover:bg-slate-50 text-uth-600 transition-all" title="รีเฟรช"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <!-- FILTER BAR (moved to top) -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-4">
+        <div class="flex gap-2 mb-3">
+          <button onclick="setDateRange('today')" id="btn-range-today" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-uth-300 bg-uth-50 text-uth-700 hover:bg-uth-100 transition-all">วันนี้</button>
+          <button onclick="setDateRange('week')" id="btn-range-week" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-all">สัปดาห์นี้</button>
+          <button onclick="setDateRange('month')" id="btn-range-month" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-all">เดือนนี้</button>
+          <button onclick="setDateRange('all')" id="btn-range-all" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-all">ทั้งหมด</button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-8 gap-3 items-end">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">ค้นหา SN/ID</label>
+            <input id="filter-sn" type="text" placeholder="ค้นหา..." class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">วันที่</label>
+            <input id="filter-date" type="date" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">เดือน</label>
+            <select id="filter-month" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm"><option value="ALL">เดือนทั้งหมด</option></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">ปี</label>
+            <select id="filter-year" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm"><option value="ALL">ปีทั้งหมด</option></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">แผนก</label>
+            <select id="filter-dept" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm"><option value="ALL">แผนกทั้งหมด</option></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">ประเภทเครื่องมือ</label>
+            <select id="filter-equip" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm"><option value="ALL">เครื่องมือทั้งหมด</option></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">สถานะ</label>
+            <select id="filter-status" class="w-full p-2 border border-slate-300 rounded-xl text-xs outline-none focus:border-uth-500 bg-white shadow-sm"><option value="ALL">สถานะทั้งหมด</option></select>
+          </div>
+          <div>
+            <button onclick="clearFilters()" class="w-full p-2 border border-slate-300 bg-slate-50 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> ล้างตัวกรอง</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS + CHART -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="bg-blue-50 rounded-2xl p-5 text-center border border-blue-100 shadow-sm">
+              <p class="text-xs text-blue-500 font-bold mb-1">ตรวจทั้งหมด</p>
+              <h3 id="dash-total" class="text-3xl font-bold text-blue-700">-</h3>
+            </div>
+            <div class="bg-green-50 rounded-2xl p-5 text-center border border-green-100 shadow-sm">
+              <p class="text-xs text-green-500 font-bold mb-1">พร้อมใช้งาน</p>
+              <h3 id="dash-normal" class="text-3xl font-bold text-green-700">-</h3>
+            </div>
+            <div class="bg-red-50 rounded-2xl p-5 text-center border border-red-100 shadow-sm">
+              <p class="text-xs text-red-500 font-bold mb-1">ชำรุด</p>
+              <h3 id="dash-broken" class="text-3xl font-bold text-red-700">-</h3>
+            </div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+            <p class="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wide">สรุปจำนวนเครื่องแต่ละแผนก</p>
+            <div id="dept-summary-list" class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600 max-h-[140px] overflow-y-auto"></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+          <h3 class="font-bold text-slate-800 text-sm mb-2 w-full text-left">สัดส่วนประเภทเครื่องมือ</h3>
+          <div class="w-full h-64 relative flex items-center justify-center"><canvas id="equipChart"></canvas></div>
+        </div>
+      </div>
+
+
+      <!-- DEPARTMENT KPI DASHBOARD -->
+      <div id="dept-kpi-card" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="font-black text-slate-800 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-5 h-5 text-uth-600"></i> KPI Daily Check แต่ละแผนก</h3>
+            <p id="dept-kpi-date-label" class="text-xs text-slate-500 mt-1">Actual vs Target total equipment per day</p>
+          </div>
+          <div id="dept-kpi-overall" class="text-sm font-black text-uth-700 bg-uth-50 border border-uth-100 px-3 py-2 rounded-xl">-</div>
+        </div>
+        <div id="dept-kpi-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden min-h-[400px]">
+        <div class="flex-1 overflow-auto table-scroll relative">
+          <div id="dash-loader" class="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center hidden">
+            <i data-lucide="loader-2" class="w-8 h-8 text-uth-500 animate-spin mb-2"></i><p class="text-sm text-slate-500">กำลังโหลดข้อมูล...</p>
+          </div>
+          <table class="w-full table-fixed text-left text-xs text-slate-600 whitespace-nowrap cursor-default">
+            <colgroup id="dash-colgroup">
+              <col style="width:118px">
+              <col style="width:150px">
+              <col style="width:145px">
+              <col style="width:105px">
+              <col style="width:100px">
+              <col style="width:125px">
+              <col style="width:94px">
+              <col style="width:120px">
+              <col style="width:58px">
+            </colgroup>
+            <thead class="bg-white text-slate-600 sticky top-0 z-10 shadow-sm border-b">
+              <tr>
+                <th onclick="sortTable('timestamp')" class="sortable-th px-3 py-2 font-semibold select-none border-r">วันที่เวลา <span id="sort-timestamp" class="sort-icon">▼</span></th>
+                <th onclick="sortTable('dept')" class="sortable-th px-3 py-2 font-semibold select-none border-r">แผนก</th>
+                <th onclick="sortTable('equip')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ประเภทเครื่องมือ</th>
+                <th onclick="sortTable('sn')" class="sortable-th px-3 py-2 font-semibold select-none border-r">รหัสเครื่อง / SN</th>
+                <th onclick="sortTable('deviceIdCode')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ID CODE</th>
+                <th onclick="sortTable('assetNo')" class="sortable-th px-3 py-2 font-semibold select-none border-r">หมายเลขครุภัณฑ์</th>
+                <th onclick="sortTable('status')" class="sortable-th px-3 py-2 font-semibold select-none text-center border-r">สถานะ</th>
+                <th onclick="sortTable('inspector')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ผู้ตรวจสอบ</th>
+                <th class="px-2 py-2 font-semibold text-center" style="width:70px;">Export</th>
+              </tr>
+            </thead>
+            <tbody id="dash-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <!-- PAGINATION -->
+        <div id="pagination-bar" class="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-slate-50">
+          <span id="page-info" class="text-xs text-slate-500"></span>
+          <div class="flex gap-1">
+            <button onclick="goPage('prev')" class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg hover:bg-slate-50">← ก่อนหน้า</button>
+            <button onclick="goPage('next')" class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg hover:bg-slate-50">ถัดไป →</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- SETTINGS PAGE -->
+    <main id="settings-page" class="flex-1 page-hidden w-full max-w-5xl mx-auto">
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden settings-card">
+        <div class="bg-gradient-to-r from-uth-800 to-uth-600 p-5 text-white">
+          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5"></i> Setting ระบบ Daily Check</h2>
+          <p class="text-xs text-uth-100 mt-1">แก้ไขการเชื่อมต่อ / ผู้ดูแลระบบ / Login code</p>
+        </div>
+
+        
+        <div class="p-5 sm:p-8 space-y-4">
+          <!-- Setting Section: Connection -->
+          <div class="setting-section open">
+            <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
+              <span class="flex items-center gap-2"><i data-lucide="link" class="w-4 h-4"></i> การเชื่อมต่อ / ผู้ดูแลระบบ</span>
+              <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
+            </button>
+            <div class="setting-section-body">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">Google Sheet Link / Sheet ID</label>
+                  <textarea id="setting-sheet-link" rows="3" placeholder="https://docs.google.com/spreadsheets/d/... หรือ Sheet ID"></textarea>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">Admin Email</label>
+                  <input id="setting-admin-email" type="email" placeholder="admin@example.com">
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">Root Folder ID สำหรับเก็บรูป</label>
+                  <input id="setting-root-folder" type="text" placeholder="Google Drive Folder ID">
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">Daily Summary Time</label>
+                  <input id="setting-summary-time" type="time" value="17:00">
+                  <p class="text-xs text-slate-500">ใช้สำหรับตั้ง Trigger ส่งสรุปรายวัน</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Section: UserLogin -->
+          <div class="setting-section open">
+            <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
+              <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> User Login Mapping</span>
+              <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
+            </button>
+            <div class="setting-section-body">
+              <div class="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="text-sm font-black text-blue-800">User Login Mapping</div>
+                    <p class="text-xs text-blue-700 mt-1">แสดง/แก้ไขข้อมูลจาก Google Sheet ชื่อ <b>UserLogin</b> ได้จากหน้านี้ และเพิ่ม Department Code ใหม่ได้</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="addUserLoginRow()" class="px-3 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม User/แผนก</button>
+                    <button type="button" onclick="saveUserLoginSettingsOnly()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก UserLogin</button>
+                    <button type="button" onclick="loadUserLoginSettings()" class="px-3 py-2 rounded-xl bg-white border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-50 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลด UserLogin</button>
+                  </div>
+                </div>
+                <div id="setting-userlogin-editor" class="overflow-x-auto rounded-2xl border border-blue-100 bg-white"></div>
+                <p class="text-[11px] text-blue-700">Columns: Code / Name / Department / Role / Active — กดบันทึกแล้ว Sheet <b>UserLogin</b> จะ update อัตโนมัติ</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Section: Department KPI -->
+          <div class="setting-section open">
+            <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
+              <span class="flex items-center gap-2"><i data-lucide="target" class="w-4 h-4"></i> Daily Summary Email / KPI Target แต่ละแผนก</span>
+              <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
+            </button>
+            <div class="setting-section-body">
+              <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                  <div>
+                    <label class="text-sm font-bold text-slate-700">Daily Summary Email / KPI Target แต่ละแผนก</label>
+                    <p class="text-xs text-slate-500 mt-1">กดชื่อแผนกเพื่อเปิดรายละเอียด: Department Email + จำนวนเครื่องมือ Target แยกตามประเภทเครื่องมือ</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="addDepartmentSettingCard()" class="px-3 py-2 rounded-xl bg-uth-700 text-white text-xs font-bold hover:bg-uth-800 flex items-center gap-1">
+                      <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มแผนก
+                    </button>
+                    <button type="button" onclick="saveDepartmentSettingOnly()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1">
+                      <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก KPI
+                    </button>
+                    <button type="button" onclick="loadDepartmentSummarySettings()" class="px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 flex items-center gap-1">
+                      <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลดจาก Sheet
+                    </button>
+                  </div>
+                </div>
+                <div id="setting-dept-summary-cards" class="space-y-2"></div>
+                <div class="text-[11px] text-slate-500 mt-1">หมายเหตุ: กดบันทึก KPI แล้ว Sheet <b>DepartmentSetting</b> จะ update/เขียนทับข้อมูลให้อัตโนมัติ ไม่ต้องลบในชีทเอง</div>
+                <p class="text-xs text-slate-500">รายการแผนกดึงจาก Sheet <b>UserLogin</b> และรายการเครื่องมือดึงจาก Form tab ของระบบ UTH Daily Check</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Section: Actions -->
+          <div class="setting-section open">
+            <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
+              <span class="flex items-center gap-2"><i data-lucide="play-circle" class="w-4 h-4"></i> บันทึก / Trigger / ทดสอบส่งสรุป</span>
+              <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
+            </button>
+            <div class="setting-section-body">
+              <div class="flex flex-col sm:flex-row flex-wrap gap-3">
+                <button onclick="saveSettings()" class="px-5 py-3 bg-uth-700 hover:bg-uth-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> บันทึก Setting</button>
+                <button onclick="createDailySummaryTrigger()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="bell" class="w-4 h-4"></i> ตั้งแจ้งเตือนรายวัน</button>
+                <button onclick="testDailySummaryEmail()" class="px-5 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> ทดสอบส่งสรุป</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- DETAIL MODAL -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-gradient-to-r from-uth-800 to-uth-600 p-4 flex justify-between items-center text-white shrink-0">
+          <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5"></i> รายละเอียดการตรวจ</h3>
+          <button onclick="closeModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-4">
+          <div id="md-img-box" class="hidden">
+            <div id="md-img-collage" class="uth-collage count-1"></div>
+            <div class="hidden"><img id="md-img" src="" class="w-full max-h-[250px] object-contain rounded-xl"></div>
+            <div id="md-img-gallery" class="hidden grid grid-cols-3 gap-2 mt-2"></div>
+            <div class="flex justify-end mt-1.5"><a id="md-img-link" href="#" target="_blank" class="text-xs text-uth-700 font-bold hover:underline flex items-center gap-1 bg-uth-50 px-2.5 py-1 rounded-xl"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> ดูรูปภาพต้นฉบับ</a></div>
+          </div>
+          <div class="grid grid-cols-2 gap-y-3 text-sm pb-4 border-b border-slate-100">
+            <div class="text-slate-500">วันที่-เวลาตรวจ:</div><div id="md-time" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">รหัสเครื่อง / SN:</div><div id="md-sn" class="font-bold text-uth-700 text-right"></div>
+            <div class="text-slate-500">ID CODE:</div><div id="md-device-id" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">หมายเลขครุภัณฑ์:</div><div id="md-asset-no" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">ประเภทเครื่องมือ:</div><div id="md-equip" class="font-medium text-slate-800 text-right leading-tight"></div>
+            <div class="text-slate-500">แผนกประจำเครื่อง:</div><div id="md-dept" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">ผู้ตรวจสอบ:</div><div id="md-inspector" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">สถานะอุปกรณ์:</div><div id="md-status" class="text-right"></div>
+          </div>
+          <div id="md-note-box" class="hidden bg-red-50 p-4 rounded-2xl border border-red-100 relative">
+            <div class="absolute -top-3 left-4 bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold border border-red-200">อาการชำรุดที่พบ</div><p id="md-note" class="text-sm text-red-700 mt-1 font-medium"></p>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 relative mt-2">
+            <div class="absolute -top-3 left-4 bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-xs font-bold border border-slate-300">รายการเช็คลิสต์ที่ผ่านการตรวจสอบ</div>
+            <div id="md-check" class="text-sm text-slate-600 mt-1 leading-relaxed"></div>
+            <div id="md-check-save-row" class="hidden pt-3 mt-3 border-t border-slate-200 flex justify-end">
+              <button type="button" onclick="saveModalChecklistEdits()" class="px-4 py-2 bg-uth-700 text-white rounded-xl text-xs font-bold hover:bg-uth-800">บันทึกการแก้ไข Checklist</button>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end shrink-0"><button onclick="closeModal()" class="px-5 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100">ปิดหน้าต่าง</button></div>
+      </div>
+    </div>
+
+    <!-- PDF PREVIEW MODAL -->
+    <div id="pdf-modal" class="fixed inset-0 bg-black/70 z-[110] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-white rounded-3xl w-full max-w-7xl max-h-[94vh] shadow-2xl overflow-hidden flex flex-col">
+        <div class="bg-gradient-to-r from-uth-800 to-uth-600 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-white shrink-0">
+          <div>
+            <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="file-search" class="w-5 h-5"></i> Preview PDF รายงานประจำวัน</h3>
+            <p class="text-xs text-uth-100">ตรวจสอบรูปแบบก่อนดาวน์โหลด</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="downloadPdf()" id="btn-download-pdf" class="px-4 py-2 bg-white text-uth-700 rounded-xl text-sm font-bold hover:bg-uth-50 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Download PDF</button>
+            <button onclick="closePdfPreview()" class="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 flex items-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> ปิด</button>
+          </div>
+        </div>
+        <div class="overflow-auto bg-slate-200 p-4">
+          <div id="pdf-template" class="mx-auto shadow-xl"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js?v=FINAL-V5-18-RESYNC-KPI-SETTING-COLLAPSE"></script>
+  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-18-RESYNC-KPI-SETTING-COLLAPSE"></script>
+</body>
+</html>
