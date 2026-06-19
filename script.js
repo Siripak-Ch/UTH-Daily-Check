@@ -7,7 +7,7 @@ Daily Check Frontend V2
 
 async function callAppsScript(action, data = null) {
   /*
-   * FINAL V5.21
+   * FINAL V5.22
    * - No local-sample data
    * - Always use current APPS_SCRIPT_URL from config.js
    * - Add cache buster to avoid old response caching
@@ -17,7 +17,7 @@ async function callAppsScript(action, data = null) {
     throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  const cacheBust = "_ts=" + Date.now() + "&_v=V5.21";
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.22";
   const parseResponse = async (res) => {
     const text = await res.text();
     try { return JSON.parse(text); }
@@ -34,15 +34,15 @@ async function callAppsScript(action, data = null) {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data, _v: "V5.21", _ts: Date.now() })
+    body: JSON.stringify({ action, data, _v: "V5.22", _ts: Date.now() })
   });
   return await parseResponse(res);
 }
 
-/* removedSaveSample removed in FINAL V5.21: all data comes from Google Sheet. */
+/* removedSaveSample removed in FINAL V5.22: all data comes from Google Sheet. */
 
 
-/* removedDashboardSample removed in FINAL V5.21: all data comes from Google Sheet. */
+/* removedDashboardSample removed in FINAL V5.22: all data comes from Google Sheet. */
 
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -249,6 +249,7 @@ let base64Images = []; // array of {base64, type}
 let imageType = null;
 let globalRawData = [];
 let globalDeptSettings = [];
+let globalEquipmentList = [];
 let globalUserLoginRows = [];
 let currentDisplayedData = [];
 let chartInstance = null;
@@ -282,7 +283,7 @@ function defaultSettings() {
 }
 
 function getSettings() {
-  // FINAL V5.21: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  // FINAL V5.22: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
   return defaultSettings();
 }
 
@@ -304,10 +305,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.21_KPI_FAST_SHEET_EQUIPMENT")) {
+    if (String(v).includes("V5.22_CACHE_KPI_ADMIN_ONLY")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.21\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.22\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -321,7 +322,7 @@ function toggleSettingSection(btn) {
   if (section) section.classList.toggle("open");
 }
 
-async function loadSettingsForm() {
+async function loadSettingsForm(forceRefresh = false) {
   const cfg = window.DAILY_CHECK_CONFIG || {};
   const defaults = {
     "setting-sheet-link": cfg.SHEET_LINK || "",
@@ -331,8 +332,15 @@ async function loadSettingsForm() {
   };
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el) el.value = val || "";
+    if (el && !el.value) el.value = val || "";
   });
+
+  // Use latest cached setting first, so page opens fast and does not reload every time.
+  const cached = readSettingsBundleCache();
+  if (!forceRefresh && cached) {
+    applySettingsBundleToUi(cached);
+    return;
+  }
 
   const userBox = document.getElementById("setting-userlogin-editor");
   const deptBox = document.getElementById("setting-dept-summary-cards");
@@ -341,42 +349,118 @@ async function loadSettingsForm() {
 
   try {
     const bundle = await callAppsScript("getSettingsBundle", {});
-    const settings = bundle.settings || bundle;
-    if (settings && settings.success) {
-      const map = {
-        "setting-sheet-link": settings.sheetLink || cfg.SHEET_LINK || "",
-        "setting-admin-email": settings.adminEmail || "",
-        "setting-root-folder": settings.rootFolderId || "",
-        "setting-summary-time": settings.summaryTime || "17:00"
-      };
-      Object.entries(map).forEach(([id, val]) => {
-        const el = document.getElementById(id);
-        if (el) el.value = val || "";
-      });
-    }
-
-    const userRes = bundle.userLogin || {};
-    if (userRes.success) {
-      globalUserLoginRows = userRes.users || [];
-      renderUserLoginEditor(globalUserLoginRows);
+    if (bundle && bundle.success) {
+      writeSettingsBundleCache(bundle);
+      applySettingsBundleToUi(bundle);
     } else {
-      renderUserLoginLoadError(userRes.error || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
-    }
-
-    const deptRes = bundle.departmentSettings || {};
-    if (deptRes.success) {
-      globalDeptSettings = deptRes.settings || [];
-      renderDepartmentSettingCards(deptRes, "");
-    } else {
-      renderDepartmentSettingLoadError(deptRes.error || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
+      throw new Error((bundle && bundle.error) || "โหลด Setting Bundle ไม่สำเร็จ");
     }
   } catch (e) {
     console.warn("loadSettingsForm bundle failed", e);
-    renderUserLoginLoadError(e.message);
-    renderDepartmentSettingLoadError(e.message);
+    // If cache exists, keep showing cached data, don't clear user UI.
+    if (cached) {
+      applySettingsBundleToUi(cached);
+    } else {
+      renderUserLoginLoadError(e.message);
+      renderDepartmentSettingLoadError(e.message);
+    }
   }
 }
 
+
+
+
+// ============================================================
+// SETTINGS CACHE (FINAL V5.22)
+// Keep latest Sheet settings in localStorage to avoid slow reload every time.
+// This cache does NOT store or override Apps Script URL.
+// ============================================================
+const SETTINGS_BUNDLE_CACHE_KEY = "uth_daily_check_settings_bundle_v522";
+const SETTINGS_BUNDLE_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+
+function readSettingsBundleCache() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_BUNDLE_CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || !obj.data || !obj.savedAt) return null;
+    if (Date.now() - obj.savedAt > SETTINGS_BUNDLE_TTL_MS) return null;
+    return obj.data;
+  } catch (e) {
+    console.warn("readSettingsBundleCache failed", e);
+    return null;
+  }
+}
+
+function writeSettingsBundleCache(data) {
+  try {
+    if (!data) return;
+    localStorage.setItem(SETTINGS_BUNDLE_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      data
+    }));
+  } catch (e) {
+    console.warn("writeSettingsBundleCache failed", e);
+  }
+}
+
+function updateSettingsBundleCache(partial) {
+  const current = readSettingsBundleCache() || {};
+  const next = Object.assign({}, current, partial || {});
+  writeSettingsBundleCache(next);
+  return next;
+}
+
+function applySettingsBundleToUi(bundle) {
+  if (!bundle) return false;
+  const cfg = window.DAILY_CHECK_CONFIG || {};
+  const settings = bundle.settings || bundle;
+  if (settings && settings.success) {
+    const map = {
+      "setting-sheet-link": settings.sheetLink || cfg.SHEET_LINK || "",
+      "setting-admin-email": settings.adminEmail || "",
+      "setting-root-folder": settings.rootFolderId || "",
+      "setting-summary-time": settings.summaryTime || "17:00"
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val || "";
+    });
+  }
+
+  const userRes = bundle.userLogin || {};
+  if (userRes.success) {
+    globalUserLoginRows = userRes.users || [];
+    renderUserLoginEditor(globalUserLoginRows);
+  }
+
+  const deptRes = bundle.departmentSettings || {};
+  if (deptRes.success) {
+    globalDeptSettings = deptRes.settings || [];
+    globalEquipmentList = (deptRes.equipmentList && deptRes.equipmentList.length ? deptRes.equipmentList : globalEquipmentList);
+    renderDepartmentSettingCards(deptRes, "");
+  }
+
+  if (bundle.equipment && bundle.equipment.success && bundle.equipment.equipmentList) {
+    globalEquipmentList = bundle.equipment.equipmentList || globalEquipmentList;
+  }
+  return true;
+}
+
+function buildCurrentSettingsBundleFromUi() {
+  return {
+    settings: {
+      success: true,
+      sheetLink: (document.getElementById("setting-sheet-link") || {}).value || "",
+      adminEmail: (document.getElementById("setting-admin-email") || {}).value || "",
+      rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
+      summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
+    },
+    userLogin: { success: true, users: globalUserLoginRows || [] },
+    departmentSettings: { success: true, settings: globalDeptSettings || [], equipmentList: globalEquipmentList || [] },
+    equipment: { success: true, equipmentList: globalEquipmentList || [] }
+  };
+}
 
 
 function isUnknownActionError(resOrErr) {
@@ -388,7 +472,7 @@ function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.21 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.22 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -399,21 +483,35 @@ function showBackendOldVersionAlert(actionName) {
 // ============================================================
 // USER LOGIN INLINE EDITOR
 // ============================================================
-async function loadUserLoginSettings() {
+async function loadUserLoginSettings(forceRefresh = false) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
+
+  const cached = readSettingsBundleCache();
+  if (!forceRefresh && cached && cached.userLogin && cached.userLogin.success) {
+    globalUserLoginRows = cached.userLogin.users || [];
+    renderUserLoginEditor(globalUserLoginRows);
+    return;
+  }
+
   box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
   try {
     const res = await callAppsScript("getUserLoginSettings", {});
     if (res && res.success) {
       globalUserLoginRows = res.users || [];
+      updateSettingsBundleCache({ userLogin: res });
       renderUserLoginEditor(globalUserLoginRows);
     } else {
       renderUserLoginLoadError((res && res.error) || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
     console.warn("loadUserLoginSettings failed", e);
-    renderUserLoginLoadError(e.message);
+    if (cached && cached.userLogin && cached.userLogin.success) {
+      globalUserLoginRows = cached.userLogin.users || [];
+      renderUserLoginEditor(globalUserLoginRows);
+    } else {
+      renderUserLoginLoadError(e.message);
+    }
   }
 }
 
@@ -512,6 +610,7 @@ async function saveUserLoginSettingsOnly() {
     const res = await callAppsScript("saveUserLoginSettings", { users });
     if (res && res.success) {
       globalUserLoginRows = res.users || users;
+      updateSettingsBundleCache({ userLogin: res });
       alert("บันทึก UserLogin สำเร็จ");
       renderUserLoginEditor(globalUserLoginRows);
       loadDepartmentSummarySettings();
@@ -528,21 +627,38 @@ async function saveUserLoginSettingsOnly() {
   }
 }
 
-async function loadDepartmentSummarySettings() {
+async function loadDepartmentSummarySettings(forceRefresh = false) {
   const box = document.getElementById("setting-dept-summary-cards");
   if (!box) return;
+
+  const cached = readSettingsBundleCache();
+  if (!forceRefresh && cached && cached.departmentSettings && cached.departmentSettings.success) {
+    globalDeptSettings = cached.departmentSettings.settings || [];
+    globalEquipmentList = cached.departmentSettings.equipmentList || globalEquipmentList || [];
+    renderDepartmentSettingCards(cached.departmentSettings, "");
+    return;
+  }
+
   box.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด DepartmentSetting จาก Sheet...</div>`;
   try {
     const res = await callAppsScript("getDepartmentSettings", {});
     if (res && res.success) {
       globalDeptSettings = res.settings || [];
+      globalEquipmentList = res.equipmentList || globalEquipmentList || [];
+      updateSettingsBundleCache({ departmentSettings: res, equipment: { success: true, equipmentList: globalEquipmentList } });
       renderDepartmentSettingCards(res, "");
     } else {
       renderDepartmentSettingLoadError((res && res.error) || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
     console.warn("loadDepartmentSummarySettings failed", e);
-    renderDepartmentSettingLoadError(e.message);
+    if (cached && cached.departmentSettings && cached.departmentSettings.success) {
+      globalDeptSettings = cached.departmentSettings.settings || [];
+      globalEquipmentList = cached.departmentSettings.equipmentList || globalEquipmentList || [];
+      renderDepartmentSettingCards(cached.departmentSettings, "");
+    } else {
+      renderDepartmentSettingLoadError(e.message);
+    }
   }
 }
 
@@ -578,7 +694,8 @@ function renderDepartmentSettingCards(res = {}, softMessage = "") {
   const box = document.getElementById("setting-dept-summary-cards");
   if (!box) return;
 
-  const equipmentList = (res.equipmentList && res.equipmentList.length ? res.equipmentList : EQUIPMENTS).slice();
+  const equipmentList = (res.equipmentList && res.equipmentList.length ? res.equipmentList : (globalEquipmentList && globalEquipmentList.length ? globalEquipmentList : EQUIPMENTS)).slice();
+  globalEquipmentList = equipmentList.slice();
   const groups = groupDepartmentSettings(res.settings || globalDeptSettings || []);
   let departments = (res.departments || Object.keys(groups) || []).filter(d => d && d !== "ALL");
 
@@ -733,6 +850,8 @@ async function saveDepartmentSettingOnly() {
     const res = await callAppsScript("saveDepartmentSettings", { settings: rows });
     if (res && res.success) {
       globalDeptSettings = res.settings || rows;
+      globalEquipmentList = res.equipmentList || globalEquipmentList || [];
+      updateSettingsBundleCache({ departmentSettings: res, equipment: { success: true, equipmentList: globalEquipmentList } });
       alert("บันทึก KPI / Department Email สำเร็จ");
       renderDepartmentSettingCards(res, "");
       renderDepartmentKpiDashboard();
@@ -770,6 +889,7 @@ async function saveSettings(options = {}) {
       summaryTime: s.summaryTime
     });
     if (!res || !res.success) throw new Error((res && res.error) || "saveSettings failed");
+    updateSettingsBundleCache({ settings: res });
     if (!silent) alert("บันทึก Setting ลง Sheet SystemConfig สำเร็จ");
   } catch (e) {
     if (!silent) alert("บันทึก Setting ไม่สำเร็จ: " + e.message);
@@ -879,7 +999,7 @@ function setupLogin() {
   }
 }
 
-/* fallbackLoginUser removed in FINAL V5.21: all data comes from Google Sheet. */
+/* fallbackLoginUser removed in FINAL V5.22: all data comes from Google Sheet. */
 
 
 async function submitLoginCode() {
@@ -1770,6 +1890,48 @@ function formatDateForKpi(dateStr) {
   return d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+
+function normalizeKpiKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[()（）\[\]{}\-_/\\.,:;|]/g, "")
+    .replace(/งาน/g, "")
+    .trim();
+}
+
+function makeNormalizedTargetGroups(settings) {
+  const raw = groupDepartmentSettings(settings || []);
+  const normalized = {};
+  Object.keys(raw).forEach(dept => {
+    const key = normalizeKpiKey(dept);
+    if (!normalized[key]) normalized[key] = raw[dept];
+    else {
+      // merge duplicate-like department names
+      Object.assign(normalized[key].equipmentTargets, raw[dept].equipmentTargets || {});
+      if (!normalized[key].headEmail && raw[dept].headEmail) normalized[key].headEmail = raw[dept].headEmail;
+    }
+  });
+  return { raw, normalized };
+}
+
+function findTargetGroupForDept(dept, targetMaps) {
+  if (!dept || !targetMaps) return null;
+  if (targetMaps.raw && targetMaps.raw[dept]) return targetMaps.raw[dept];
+  const key = normalizeKpiKey(dept);
+  if (targetMaps.normalized && targetMaps.normalized[key]) return targetMaps.normalized[key];
+  return null;
+}
+
+function getAllKpiEquipments(targetGroup, actualByEquip) {
+  const set = new Set();
+  (globalEquipmentList && globalEquipmentList.length ? globalEquipmentList : EQUIPMENTS).forEach(eq => set.add(eq));
+  Object.keys((targetGroup && targetGroup.equipmentTargets) || {}).forEach(eq => set.add(eq));
+  Object.keys(actualByEquip || {}).forEach(eq => set.add(eq));
+  return Array.from(set).filter(Boolean);
+}
+
+
 function renderDepartmentKpiDashboard() {
   const list = document.getElementById("dept-kpi-list");
   const overall = document.getElementById("dept-kpi-overall");
@@ -1781,27 +1943,27 @@ function renderDepartmentKpiDashboard() {
   const selectedDept = fDept ? fDept.value : "ALL";
 
   const rowsForDate = (globalRawData || []).filter(r => getRowDate(r) === refDate);
-  const groupedTargets = groupDepartmentSettings(globalDeptSettings || []);
+  const targetMaps = makeNormalizedTargetGroups(globalDeptSettings || []);
 
   let items = [];
   let modeLabel = "";
 
   if (selectedDept && selectedDept !== "ALL") {
-    // Department selected: show each equipment actual / target for that department
+    // Department selected: show ALL equipment list actual / target for that department
     modeLabel = `รายเครื่องมือของแผนก ${selectedDept}`;
+    const selectedKey = normalizeKpiKey(selectedDept);
     const actualByEquip = {};
+
     rowsForDate
-      .filter(r => (r.dept || "-") === selectedDept)
+      .filter(r => normalizeKpiKey(r.dept || "-") === selectedKey)
       .forEach(r => {
         const eq = r.equip || "-";
         actualByEquip[eq] = (actualByEquip[eq] || 0) + 1;
       });
 
-    const equipTargets = (groupedTargets[selectedDept] && groupedTargets[selectedDept].equipmentTargets) || {};
-    const equipNames = Array.from(new Set([
-      ...Object.keys(equipTargets).filter(Boolean),
-      ...Object.keys(actualByEquip).filter(Boolean)
-    ]));
+    const targetGroup = findTargetGroupForDept(selectedDept, targetMaps) || { equipmentTargets: {} };
+    const equipTargets = targetGroup.equipmentTargets || {};
+    const equipNames = getAllKpiEquipments(targetGroup, actualByEquip);
 
     items = equipNames.map(eq => ({
       name: equipmentShort(eq),
@@ -1810,27 +1972,32 @@ function renderDepartmentKpiDashboard() {
       actual: Number(actualByEquip[eq] || 0)
     }));
   } else {
-    // All departments: show each department total checked / total target from Daily Summary KPI setting
+    // All departments: show each department total actual / total target from Daily Summary KPI setting
     modeLabel = "รวมทุกแผนก";
-    const actualByDept = {};
+    const actualByKey = {};
+    const displayByKey = {};
+
     rowsForDate.forEach(r => {
       const dept = r.dept || "-";
-      actualByDept[dept] = (actualByDept[dept] || 0) + 1;
+      const key = normalizeKpiKey(dept);
+      actualByKey[key] = (actualByKey[key] || 0) + 1;
+      if (!displayByKey[key]) displayByKey[key] = dept;
     });
 
-    const deptNames = Array.from(new Set([
-      ...Object.keys(groupedTargets),
-      ...Object.keys(actualByDept)
+    const targetKeys = Object.keys(targetMaps.normalized || {});
+    const keys = Array.from(new Set([
+      ...targetKeys,
+      ...Object.keys(actualByKey)
     ])).filter(Boolean);
 
-    items = deptNames.map(dept => {
-      const g = groupedTargets[dept] || { equipmentTargets: {}, active: true, headEmail: "" };
+    items = keys.map(key => {
+      const g = (targetMaps.normalized || {})[key] || { department: displayByKey[key] || "-", equipmentTargets: {}, active: true, headEmail: "" };
       const target = Object.values(g.equipmentTargets || {}).reduce((sum, v) => sum + Number(v || 0), 0);
       return {
-        name: dept,
-        fullName: dept,
+        name: g.department || displayByKey[key] || "-",
+        fullName: g.department || displayByKey[key] || "-",
         target,
-        actual: Number(actualByDept[dept] || 0),
+        actual: Number(actualByKey[key] || 0),
         active: g.active !== false
       };
     }).filter(x => x.active !== false);
