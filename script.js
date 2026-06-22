@@ -1,5 +1,4 @@
-const FRONTEND_VERSION = "V5.24_IDCODE_THAI_UI_INFO";
-
+const FRONTEND_VERSION = "V5.25_LOGIN_HELP_REQUEST_ACCESS";
 /*
 Daily Check Frontend V2
 - GitHub Pages frontend
@@ -9,7 +8,7 @@ Daily Check Frontend V2
 
 async function callAppsScript(action, data = null) {
   /*
-   * FINAL V5.24
+   * FINAL V5.25
    * - No local-sample data
    * - Always use current APPS_SCRIPT_URL from config.js
    * - Add cache buster to avoid old response caching
@@ -19,14 +18,14 @@ async function callAppsScript(action, data = null) {
     throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  const cacheBust = "_ts=" + Date.now() + "&_v=V5.24";
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.25";
   const parseResponse = async (res) => {
     const text = await res.text();
     try { return JSON.parse(text); }
     catch (e) { throw new Error("Apps Script response ไม่ใช่ JSON: " + text.slice(0, 250)); }
   };
 
-  if (["dashboard","getSettings","getSettingsBundle","getรหัสเข้าใช้งานSettings","getDepartmentSettings","getEquipmentList","getVersion","checkRootFolder"].includes(action)) {
+  if (["dashboard","getSettings","getSettingsBundle","getUserLoginSettings","getDepartmentSettings","getEquipmentList","getVersion","checkRootFolder"].includes(action)) {
     const url = appsScriptUrl + (appsScriptUrl.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action) + "&" + cacheBust;
     const res = await fetch(url, { method: "GET", cache: "no-store" });
     return await parseResponse(res);
@@ -36,15 +35,15 @@ async function callAppsScript(action, data = null) {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data, _v: "V5.24", _ts: Date.now() })
+    body: JSON.stringify({ action, data, _v: "V5.25", _ts: Date.now() })
   });
   return await parseResponse(res);
 }
 
-/* removedSaveSample removed in FINAL V5.24: all data comes from Google Sheet. */
+/* removedSaveSample removed in FINAL V5.25: all data comes from Google Sheet. */
 
 
-/* removedสรุปข้อมูลSample removed in FINAL V5.24: all data comes from Google Sheet. */
+/* removedDashboardSample removed in FINAL V5.25: all data comes from Google Sheet. */
 
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -252,7 +251,7 @@ let imageType = null;
 let globalRawData = [];
 let globalDeptSettings = [];
 let globalEquipmentList = [];
-let globalรหัสเข้าใช้งานRows = [];
+let globalUserLoginRows = [];
 let currentDisplayedData = [];
 let chartInstance = null;
 let currentSortCol = "timestamp";
@@ -285,7 +284,7 @@ function defaultSettings() {
 }
 
 function getSettings() {
-  // FINAL V5.24: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  // FINAL V5.25: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
   return defaultSettings();
 }
 
@@ -307,10 +306,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.24_IDCODE_THAI_UI_INFO")) {
+    if (String(v).includes("V5.25.1_BUNDLE_FALLBACK")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.24\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.25\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -331,7 +330,7 @@ function isUnknownActionMessage(msg) {
 
 async function loadSettingsBundleCompat() {
   /*
-   * FINAL V5.24.1
+   * FINAL V5.25.1
    * Try fast bundle first. If backend is older and does not know getSettingsBundle,
    * fall back to individual Sheet actions without showing error to the user.
    */
@@ -350,7 +349,7 @@ async function loadSettingsBundleCompat() {
 
   const results = await Promise.allSettled([
     callAppsScript("getSettings", {}),
-    callAppsScript("getรหัสเข้าใช้งานSettings", {}),
+    callAppsScript("getUserLoginSettings", {}),
     callAppsScript("getDepartmentSettings", {}),
     callAppsScript("getEquipmentList", {})
   ]);
@@ -361,7 +360,7 @@ async function loadSettingsBundleCompat() {
   };
 
   const settings = getVal(0, { success: false, error: results[0] && results[0].reason ? results[0].reason.message : "getSettings failed" });
-  const userLogin = getVal(1, { success: false, error: results[1] && results[1].reason ? results[1].reason.message : "getรหัสเข้าใช้งานSettings failed" });
+  const userLogin = getVal(1, { success: false, error: results[1] && results[1].reason ? results[1].reason.message : "getUserLoginSettings failed" });
   const departmentSettings = getVal(2, { success: false, error: results[2] && results[2].reason ? results[2].reason.message : "getDepartmentSettings failed" });
   let equipment = getVal(3, { success: false, equipmentList: [] });
 
@@ -380,7 +379,7 @@ async function loadSettingsBundleCompat() {
     departmentSettings,
     equipment,
     fallbackMode: true,
-    version: "V5.24.1_FRONT_FALLBACK"
+    version: "V5.25_FRONT_DIRECT_LOAD"
   };
 }
 
@@ -408,10 +407,11 @@ async function loadSettingsForm(forceRefresh = false) {
     if (deptBox) deptBox.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด KPI จากชีต...</div>`;
   }
 
+  showLoading("กำลังโหลดข้อมูลตั้งค่า...", "กำลังเชื่อมต่อ Google Sheet");
   try {
     const results = await Promise.allSettled([
       callAppsScript("getSettings", {}),
-      callAppsScript("getรหัสเข้าใช้งานSettings", {}),
+      callAppsScript("getUserLoginSettings", {}),
       callAppsScript("getDepartmentSettings", {}),
       callAppsScript("getEquipmentList", {})
     ]);
@@ -427,7 +427,7 @@ async function loadSettingsForm(forceRefresh = false) {
       userLogin: getVal(1, { success: false, error: "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ" }),
       departmentSettings: getVal(2, { success: false, error: "โหลด KPI จากชีตไม่สำเร็จ" }),
       equipment: getVal(3, { success: true, equipmentList: [] }),
-      version: "V5.24_FRONT_DIRECT_LOAD"
+      version: "V5.25_FRONT_DIRECT_LOAD"
     };
     if (!bundle.equipment || !bundle.equipment.success) {
       bundle.equipment = { success: true, equipmentList: (bundle.departmentSettings && bundle.departmentSettings.equipmentList) || [] };
@@ -436,14 +436,16 @@ async function loadSettingsForm(forceRefresh = false) {
     writeSettingsBundleCache(bundle);
     applySettingsBundleToUi(bundle);
 
-    if (bundle.userLogin && !bundle.userLogin.success) renderรหัสเข้าใช้งานLoadError(bundle.userLogin.error || "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ");
+    if (bundle.userLogin && !bundle.userLogin.success) renderUserLoginLoadError(bundle.userLogin.error || "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ");
     if (bundle.departmentSettings && !bundle.departmentSettings.success) renderDepartmentSettingLoadError(bundle.departmentSettings.error || "โหลด KPI จากชีตไม่สำเร็จ");
   } catch (e) {
     console.warn("loadSettingsForm direct sheet load failed", e);
     if (!cached) {
-      renderรหัสเข้าใช้งานLoadError(e.message);
+      renderUserLoginLoadError(e.message);
       renderDepartmentSettingLoadError(e.message);
     }
+  } finally {
+    hideLoading(true);
   }
 }
 
@@ -451,7 +453,7 @@ async function loadSettingsForm(forceRefresh = false) {
 
 
 // ============================================================
-// SETTINGS CACHE (FINAL V5.24)
+// SETTINGS CACHE (FINAL V5.25)
 // Keep latest Sheet settings in localStorage to avoid slow reload every time.
 // This cache does NOT store or override Apps Script URL.
 // ============================================================
@@ -510,8 +512,8 @@ function applySettingsBundleToUi(bundle) {
 
   const userRes = bundle.userLogin || {};
   if (userRes.success) {
-    globalรหัสเข้าใช้งานRows = userRes.users || [];
-    renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
+    globalUserLoginRows = userRes.users || [];
+    renderUserLoginEditor(globalUserLoginRows);
   }
 
   const deptRes = bundle.departmentSettings || {};
@@ -536,7 +538,7 @@ function buildCurrentSettingsBundleFromUi() {
       rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
       summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
     },
-    userLogin: { success: true, users: globalรหัสเข้าใช้งานRows || [] },
+    userLogin: { success: true, users: globalUserLoginRows || [] },
     departmentSettings: { success: true, settings: globalDeptSettings || [], equipmentList: globalEquipmentList || [] },
     equipment: { success: true, equipmentList: globalEquipmentList || [] }
   };
@@ -545,14 +547,14 @@ function buildCurrentSettingsBundleFromUi() {
 
 function isUnknownActionError(resOrErr) {
   const msg = String((resOrErr && resOrErr.error) || (resOrErr && resOrErr.message) || resOrErr || "");
-  return /Unknown action|saveรหัสเข้าใช้งานSettings|saveDepartmentSettings/i.test(msg);
+  return /Unknown action|saveUserLoginSettings|saveDepartmentSettings/i.test(msg);
 }
 
 function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.24 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.25 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -563,43 +565,43 @@ function showBackendOldVersionAlert(actionName) {
 // ============================================================
 // USER LOGIN INLINE EDITOR
 // ============================================================
-async function loadรหัสเข้าใช้งานSettings(forceRefresh = false) {
+async function loadUserLoginSettings(forceRefresh = false) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
 
   const cached = readSettingsBundleCache();
   if (!forceRefresh && cached && cached.userLogin && cached.userLogin.success) {
-    globalรหัสเข้าใช้งานRows = cached.userLogin.users || [];
-    renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
+    globalUserLoginRows = cached.userLogin.users || [];
+    renderUserLoginEditor(globalUserLoginRows);
     return;
   }
 
-  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด รหัสเข้าใช้งาน จาก Sheet...</div>`;
+  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
   try {
-    const res = await callAppsScript("getรหัสเข้าใช้งานSettings", {});
+    const res = await callAppsScript("getUserLoginSettings", {});
     if (res && res.success) {
-      globalรหัสเข้าใช้งานRows = res.users || [];
+      globalUserLoginRows = res.users || [];
       updateSettingsBundleCache({ userLogin: res });
-      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
+      renderUserLoginEditor(globalUserLoginRows);
     } else {
-      renderรหัสเข้าใช้งานLoadError((res && res.error) || "โหลด รหัสเข้าใช้งาน จาก Sheet ไม่สำเร็จ");
+      renderUserLoginLoadError((res && res.error) || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
-    console.warn("loadรหัสเข้าใช้งานSettings failed", e);
+    console.warn("loadUserLoginSettings failed", e);
     if (cached && cached.userLogin && cached.userLogin.success) {
-      globalรหัสเข้าใช้งานRows = cached.userLogin.users || [];
-      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
+      globalUserLoginRows = cached.userLogin.users || [];
+      renderUserLoginEditor(globalUserLoginRows);
     } else {
-      renderรหัสเข้าใช้งานLoadError(e.message);
+      renderUserLoginLoadError(e.message);
     }
   }
 }
 
-function renderรหัสเข้าใช้งานLoadError(message) {
+function renderUserLoginLoadError(message) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
   box.innerHTML = `<div class="p-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl">
-    โหลด รหัสเข้าใช้งาน จาก Google Sheet ไม่สำเร็จ<br>
+    โหลด UserLogin จาก Google Sheet ไม่สำเร็จ<br>
     <span class="text-xs">${escapeHTML(message || "")}</span><br>
     <span class="text-xs">ระบบจะไม่ใช้ sample/fallback data — กรุณาตรวจ Apps Script และ Deploy version ล่าสุด</span>
   </div>`;
@@ -607,16 +609,16 @@ function renderรหัสเข้าใช้งานLoadError(message) {
 
 
 
-function renderรหัสเข้าใช้งานEditor(users = []) {
+function renderUserLoginEditor(users = []) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
   if (!users.length) {
-    box.innerHTML = `<div class="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลใน Sheet รหัสเข้าใช้งาน — กดเพิ่ม User/แผนก เพื่อสร้างรายการใหม่</div>
+    box.innerHTML = `<div class="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลใน Sheet UserLogin — กดเพิ่ม User/แผนก เพื่อสร้างรายการใหม่</div>
       <table class="userlogin-table"><tbody id="userlogin-tbody"></tbody></table>`;
     return;
   }
 
-  const rows = users.map(u => buildรหัสเข้าใช้งานRowHtml(u)).join("");
+  const rows = users.map(u => buildUserLoginRowHtml(u)).join("");
   box.innerHTML = `
     <table class="userlogin-table">
       <thead>
@@ -633,7 +635,7 @@ function renderรหัสเข้าใช้งานEditor(users = []) {
     </table>`;
 }
 
-function buildรหัสเข้าใช้งานRowHtml(u = {}) {
+function buildUserLoginRowHtml(u = {}) {
   const active = (u.active === false || String(u.active).toUpperCase() === "FALSE") ? "FALSE" : "TRUE";
   return `
     <tr>
@@ -653,25 +655,25 @@ function buildรหัสเข้าใช้งานRowHtml(u = {}) {
           <option value="FALSE" ${active === "FALSE" ? "selected" : ""}>FALSE</option>
         </select>
       </td>
-      <td><button type="button" onclick="removeรหัสเข้าใช้งานRow(this)" class="text-red-600 text-xs font-bold hover:underline">ลบ</button></td>
+      <td><button type="button" onclick="removeUserLoginRow(this)" class="text-red-600 text-xs font-bold hover:underline">ลบ</button></td>
     </tr>`;
 }
 
-function addรหัสเข้าใช้งานRow() {
+function addUserLoginRow() {
   const tbody = document.getElementById("userlogin-tbody");
   if (!tbody) {
-    renderรหัสเข้าใช้งานEditor([]);
+    renderUserLoginEditor([]);
     return;
   }
-  tbody.insertAdjacentHTML("beforeend", buildรหัสเข้าใช้งานRowHtml({ role: "user", active: true }));
+  tbody.insertAdjacentHTML("beforeend", buildUserLoginRowHtml({ role: "user", active: true }));
 }
 
-function removeรหัสเข้าใช้งานRow(btn) {
+function removeUserLoginRow(btn) {
   const tr = btn.closest("tr");
-  if (tr && confirm("ลบ User/รหัสแผนก นี้ใช่หรือไม่?")) tr.remove();
+  if (tr && confirm("ลบ User/Department Code นี้ใช่หรือไม่?")) tr.remove();
 }
 
-function getรหัสเข้าใช้งานRowsFromEditor() {
+function getUserLoginRowsFromEditor() {
   const tbody = document.getElementById("userlogin-tbody");
   if (!tbody) return [];
   return Array.from(tbody.querySelectorAll("tr")).map(tr => ({
@@ -683,25 +685,25 @@ function getรหัสเข้าใช้งานRowsFromEditor() {
   })).filter(u => u.code.trim() && u.department.trim());
 }
 
-async function saveรหัสเข้าใช้งานSettingsOnly() {
-  showLoading("กำลังบันทึก รหัสเข้าใช้งาน...", "กำลังบันทึก รหัสแผนก Mapping");
+async function saveUserLoginSettingsOnly() {
+  showLoading("กำลังบันทึก UserLogin...", "กำลังบันทึก Department Code Mapping");
   try {
-    const users = getรหัสเข้าใช้งานRowsFromEditor();
-    const res = await callAppsScript("saveรหัสเข้าใช้งานSettings", { users });
+    const users = getUserLoginRowsFromEditor();
+    const res = await callAppsScript("saveUserLoginSettings", { users });
     if (res && res.success) {
-      globalรหัสเข้าใช้งานRows = res.users || users;
+      globalUserLoginRows = res.users || users;
       updateSettingsBundleCache({ userLogin: res });
-      alert("บันทึก รหัสเข้าใช้งาน สำเร็จ");
-      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
+      alert("บันทึก UserLogin สำเร็จ");
+      renderUserLoginEditor(globalUserLoginRows);
       loadDepartmentSummarySettings();
     } else if (isUnknownActionError(res)) {
-      showBackendOldVersionAlert("saveรหัสเข้าใช้งานSettings");
+      showBackendOldVersionAlert("saveUserLoginSettings");
     } else {
-      alert("บันทึก รหัสเข้าใช้งาน ไม่สำเร็จ: " + ((res && res.error) || "Unknown error"));
+      alert("บันทึก UserLogin ไม่สำเร็จ: " + ((res && res.error) || "Unknown error"));
     }
   } catch (e) {
-    if (isUnknownActionError(e)) showBackendOldVersionAlert("saveรหัสเข้าใช้งานSettings");
-    else alert("บันทึก รหัสเข้าใช้งาน ไม่สำเร็จ: " + e.message);
+    if (isUnknownActionError(e)) showBackendOldVersionAlert("saveUserLoginSettings");
+    else alert("บันทึก UserLogin ไม่สำเร็จ: " + e.message);
   } finally {
     hideLoading(true);
   }
@@ -934,7 +936,7 @@ async function saveDepartmentSettingOnly() {
       updateSettingsBundleCache({ departmentSettings: res, equipment: { success: true, equipmentList: globalEquipmentList } });
       alert("บันทึก KPI / Department Email สำเร็จ");
       renderDepartmentSettingCards(res, "");
-      renderDepartmentKpiสรุปข้อมูล();
+      renderDepartmentKpiDashboard();
     } else if (isUnknownActionError(res)) {
       showBackendOldVersionAlert("saveDepartmentSettings");
     } else {
@@ -1051,7 +1053,7 @@ function isLoggedIn() {
 }
 
 function showRequestAccessInfo() {
-  alert("กรุณาติดต่อผู้ดูแลระบบ เพื่อขอ รหัสแผนก หรือเพิ่ม Code ใน Sheet: รหัสเข้าใช้งาน");
+  openAccessRequestModal();
 }
 
 function setupLogin() {
@@ -1079,7 +1081,7 @@ function setupLogin() {
   }
 }
 
-/* fallbackLoginUser removed in FINAL V5.24: all data comes from Google Sheet. */
+/* fallbackLoginUser removed in FINAL V5.25: all data comes from Google Sheet. */
 
 
 async function submitLoginCode() {
@@ -1096,6 +1098,7 @@ async function submitLoginCode() {
     return;
   }
 
+  showLoading("กำลังเข้าสู่ระบบ...", "กำลังตรวจสอบรหัสแผนกจากชีต UserLogin");
   let user = null;
   try {
     const res = await callAppsScript("loginUser", { code });
@@ -1103,9 +1106,10 @@ async function submitLoginCode() {
   } catch (e) {
     console.warn("Backend login failed", e);
     if (err) {
-      err.textContent = "เชื่อมต่อชีต UserLogin ไม่สำเร็จ กรุณาตรวจ Apps Script / Deploy version ล่าสุด";
+      err.textContent = "เชื่อมต่อชีต UserLogin ไม่สำเร็จ กรุณาตรวจ Apps Script และ Deploy version ล่าสุด";
       err.classList.remove("hidden");
     }
+    hideLoading(true);
     return;
   }
 
@@ -1126,6 +1130,7 @@ async function submitLoginCode() {
       err.classList.remove("hidden");
     }
   }
+  hideLoading(true);
 }
 
 function applyLoginUserToUI() {
@@ -1362,27 +1367,77 @@ function switchTab(tabName) {
     document.getElementById("settings-page").classList.remove("page-hidden");
     if (btnSettings) { btnSettings.classList.add("bg-white/20", "text-white"); btnSettings.classList.remove("text-uth-100"); }
     if (btnSettingsMob) { btnSettingsMob.classList.add("border-white", "text-white"); btnSettingsMob.classList.remove("border-transparent"); }
-    loadSettingsForm(true);
+    loadSettingsForm();
   } else {
     document.getElementById("dashboard-page").classList.remove("page-hidden");
     if (btnDash) { btnDash.classList.add("bg-white/20", "text-white"); btnDash.classList.remove("text-uth-100"); }
     if (btnDashMob) { btnDashMob.classList.add("border-white", "text-white"); btnDashMob.classList.remove("border-transparent"); }
-    if (globalRawData.length === 0) loadสรุปข้อมูลData();
-    else resyncสรุปข้อมูลDataSilent();
+    if (globalRawData.length === 0) loadDashboardData();
+    else resyncDashboardDataSilent();
   }
   lucide.createIcons();
 }
 
 
-function showUsageInfo() {
+const USAGE_HELP = {
+  login: {
+    title: "วิธีใช้งานเบื้องต้นการเข้าสู่ระบบ",
+    body: [
+      "กรอกรหัสแผนกที่ได้รับจากผู้ดูแลระบบ เช่น ADMF, ADMM, ER, OR",
+      "กดปุ่ม “เข้าสู่ระบบ / ตรวจรหัส” ระบบจะตรวจข้อมูลจากชีต UserLogin",
+      "ถ้าเปิดใช้งานแล้ว ระบบจะเลือกแผนกให้อัตโนมัติในหน้าบันทึกและหน้ารายการสรุป",
+      "ถ้ายังไม่มีรหัส ให้กด “ขอเปิดใช้งานรหัสแผนก” และรออีเมลอนุมัติจากผู้ดูแลระบบ"
+    ]
+  },
+  form: {
+    title: "วิธีใช้งานเบื้องต้นบันทึกการตรวจสอบประจำวัน",
+    body: [
+      "เลือกแผนก / หน่วยงาน และประเภทเครื่องมือ",
+      "กรอก ID CODE เป็นข้อมูลบังคับ ส่วนรหัสเครื่อง / SN และหมายเลขครุภัณฑ์เป็นข้อมูลไม่บังคับ",
+      "เลือก PASS/FAIL ในรายการ Checklist ให้ครบถ้วน",
+      "เลือกสถานะเครื่องมือ แนบรูปภาพ แล้วกดบันทึกข้อมูล",
+      "ขณะบันทึก ระบบจะแสดงหน้าต่างกำลังบันทึกจนกว่าจะเสร็จ"
+    ]
+  },
+  dashboard: {
+    title: "วิธีใช้งานเบื้องต้นแดชบอร์ดสรุปข้อมูลการตรวจสอบเครื่องมือแพทย์ประจำวัน",
+    body: [
+      "ใช้ตัวกรองวันที่ เดือน ปี แผนก ประเภทเครื่องมือ สถานะ หรือค้นหา ID/SN/ครุภัณฑ์",
+      "ดู KPI เปรียบเทียบ Actual กับ Target ตามแผนกหรือรายเครื่องมือ",
+      "กดรายการในตารางเพื่อดูรายละเอียด รูปภาพ และ Checklist",
+      "ใช้ปุ่มส่งออก PDF / Excel หรือรายงานรายเดือนตามต้องการ"
+    ]
+  },
+  settings: {
+    title: "วิธีใช้งานเบื้องต้นการตั้งค่า",
+    body: [
+      "ตั้งค่า Google Sheet, Admin Email, Root Folder และเวลาส่งสรุปรายวัน",
+      "จัดการรหัสเข้าใช้งานของแต่ละแผนกจากส่วนแผนกและรหัสเข้าใช้งาน",
+      "ตั้งค่าอีเมลหัวหน้าแผนกและ Target KPI รายเครื่องมือ",
+      "กดบันทึกหลังแก้ไขข้อมูล เพื่อให้ข้อมูลอัปเดตกลับไปยัง Google Sheet"
+    ]
+  }
+};
+
+function showUsageInfo(topic = "login") {
+  const data = USAGE_HELP[topic] || USAGE_HELP.login;
+  const title = document.getElementById("usage-info-title");
+  const body = document.getElementById("usage-info-body");
+  if (title) title.innerHTML = `<i data-lucide="info" class="w-5 h-5"></i> ${escapeHTML(data.title)}`;
+  if (body) {
+    body.innerHTML = data.body.map((text, idx) => `
+      <div class="flex gap-3">
+        <div class="w-6 h-6 rounded-full bg-uth-50 text-uth-700 font-black flex items-center justify-center shrink-0">${idx + 1}</div>
+        <div>${escapeHTML(text)}</div>
+      </div>
+    `).join("");
+  }
   const modal = document.getElementById("usage-info-modal");
   if (modal) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
-    lucide.createIcons();
-  } else {
-    alert("วิธีใช้งานเบื้องต้น\\n1) Login ด้วย รหัสแผนก\\n2) เลือกแผนก/เครื่องมือ\\n3) กรอก ID CODE\\n4) เลือก PASS/FAIL และแนบรูป\\n5) กดบันทึกข้อมูล");
   }
+  lucide.createIcons();
 }
 
 function closeUsageInfo() {
@@ -1390,6 +1445,57 @@ function closeUsageInfo() {
   if (modal) {
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+  }
+}
+
+function openAccessRequestModal() {
+  const modal = document.getElementById("access-request-modal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    setTimeout(() => {
+      const input = document.getElementById("req-name");
+      if (input) input.focus();
+    }, 100);
+  }
+  lucide.createIcons();
+}
+
+function closeAccessRequestModal() {
+  const modal = document.getElementById("access-request-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+}
+
+async function submitAccessRequest(e) {
+  e.preventDefault();
+  const payload = {
+    requesterName: (document.getElementById("req-name") || {}).value || "",
+    requesterEmail: (document.getElementById("req-email") || {}).value || "",
+    departmentCode: (document.getElementById("req-code") || {}).value || "",
+    departmentName: (document.getElementById("req-dept") || {}).value || "",
+    note: (document.getElementById("req-note") || {}).value || ""
+  };
+
+  if (!payload.requesterName.trim() || !payload.requesterEmail.trim() || !payload.departmentCode.trim() || !payload.departmentName.trim()) {
+    alert("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");
+    return;
+  }
+
+  showLoading("กำลังส่งคำขอเปิดใช้งาน...", "ระบบกำลังส่งอีเมลแจ้งผู้ดูแลระบบเพื่ออนุมัติ");
+  try {
+    const res = await callAppsScript("requestDepartmentAccess", payload);
+    if (!res || !res.success) throw new Error((res && res.error) || "ส่งคำขอไม่สำเร็จ");
+    alert("ส่งคำขอสำเร็จ\\nระบบได้แจ้งผู้ดูแลระบบแล้ว เมื่ออนุมัติแล้วผู้ขอจะได้รับอีเมลตอบกลับ");
+    const form = document.getElementById("access-request-form");
+    if (form) form.reset();
+    closeAccessRequestModal();
+  } catch (err) {
+    alert("ส่งคำขอไม่สำเร็จ: " + err.message);
+  } finally {
+    hideLoading(true);
   }
 }
 
@@ -1401,7 +1507,6 @@ function setupBranding() {
   document.getElementById("app-hospital").innerText = cfg.HOSPITAL_NAME || "โรงพยาบาลอุทัยธานี";
   document.getElementById("app-system").innerText = cfg.SYSTEM_NAME || "ระบบ Daily Check เครื่องมือแพทย์";
 
-  // Fix browser tab logo / favicon cache
   ["icon", "shortcut icon", "apple-touch-icon"].forEach(rel => {
     let link = document.querySelector(`link[rel="${rel}"]`);
     if (!link) {
@@ -1409,7 +1514,7 @@ function setupBranding() {
       link.rel = rel;
       document.head.appendChild(link);
     }
-    link.href = "./" + String(logo).replace("./", "") + "?v=5.24";
+    link.href = "./" + String(logo).replace("./", "") + "?v=5.25";
     if (rel !== "apple-touch-icon") link.type = "image/png";
   });
 }
@@ -1424,6 +1529,8 @@ document.addEventListener("DOMContentLoaded", () => {
   DEPARTMENTS.forEach(d => document.getElementById("department").appendChild(new Option(d, d)));
   EQUIPMENTS.forEach(e => document.getElementById("equipment").appendChild(new Option(e, e)));
   bindFormEvents();
+  const accessForm = document.getElementById("access-request-form");
+  if (accessForm && !accessForm.dataset.bound) { accessForm.dataset.bound = "1"; accessForm.addEventListener("submit", submitAccessRequest); }
   applyLoginUserToUI();
 
   // Remember inspector name
@@ -1434,7 +1541,7 @@ document.addEventListener("DOMContentLoaded", () => {
   logPageVisit();
 
   // Auto resync dashboard every 1 minute
-  startสรุปข้อมูลAutoResync();
+  startDashboardAutoResync();
   loadSettingsForm();
 });
 
@@ -1760,7 +1867,7 @@ function resetFormForNextRecord() {
 }
 
 
-function captureสรุปข้อมูลUiState() {
+function captureDashboardUiState() {
   const val = (id) => {
     const el = document.getElementById(id);
     return el ? el.value : "";
@@ -1788,7 +1895,7 @@ function setSelectValueKeep(selectId, value) {
   el.value = exists ? value : (el.querySelector('option[value="ALL"]') ? "ALL" : "");
 }
 
-function restoreสรุปข้อมูลUiState(state) {
+function restoreDashboardUiState(state) {
   if (!state) return;
   const fDate = document.getElementById("filter-date");
   const fSn = document.getElementById("filter-sn");
@@ -1805,11 +1912,11 @@ function restoreสรุปข้อมูลUiState(state) {
   if (typeof state.sortAsc === "boolean") sortAsc = state.sortAsc;
 }
 
-async function loadสรุปข้อมูลData() {
+async function loadDashboardData() {
   const dashLoader = document.getElementById("dash-loader");
   if (dashLoader) dashLoader.classList.remove("hidden");
-  const keepState = globalRawData && globalRawData.length ? captureสรุปข้อมูลUiState() : null;
-  showLoading("กำลังโหลด สรุปข้อมูล...", "กำลังดึงข้อมูลล่าสุดจาก Google Sheet");
+  const keepState = globalRawData && globalRawData.length ? captureDashboardUiState() : null;
+  showLoading("กำลังโหลด Dashboard...", "กำลังดึงข้อมูลล่าสุดจาก Google Sheet");
 
   try {
     const res = await callAppsScript("dashboard");
@@ -1819,7 +1926,7 @@ async function loadสรุปข้อมูลData() {
     globalDeptSettings = res.deptSettings || globalDeptSettings || [];
     initFilters({ keepUserSelection: !!keepState });
     if (keepState) {
-      restoreสรุปข้อมูลUiState(keepState);
+      restoreDashboardUiState(keepState);
       applyFilter({ preservePage: true });
     } else {
       applyUserDepartmentFilter();
@@ -1827,7 +1934,7 @@ async function loadสรุปข้อมูลData() {
     }
   } catch (err) {
     if (dashLoader) dashLoader.classList.add("hidden");
-    alert("โหลด สรุปข้อมูล ไม่สำเร็จ: " + err.message);
+    alert("โหลด Dashboard ไม่สำเร็จ: " + err.message);
   } finally {
     hideLoading(true);
   }
@@ -1945,6 +2052,8 @@ function sortTable(col) {
 }
 
 function applyFilter(options = {}) {
+  const showFilterLoading = !options.preservePage && !options.silent;
+  if (showFilterLoading) showLoading("กำลังกรองข้อมูล...", "กำลังจัดรายการตามเงื่อนไขที่เลือก");
   if (!options.preservePage) currentPage = 1;
   const selectedDate = document.getElementById("filter-date").value;
   const y = document.getElementById("filter-year").value;
@@ -1992,7 +2101,8 @@ function applyFilter(options = {}) {
   });
 
   lastFilteredData = filtered;
-  renderสรุปข้อมูล(filtered);
+  renderDashboard(filtered);
+  if (showFilterLoading) setTimeout(() => hideLoading(true), 250);
 }
 
 
@@ -2050,7 +2160,7 @@ function getAllKpiEquipments(targetGroup, actualByEquip) {
 }
 
 
-function renderDepartmentKpiสรุปข้อมูล() {
+function renderDepartmentKpiDashboard() {
   const list = document.getElementById("dept-kpi-list");
   const overall = document.getElementById("dept-kpi-overall");
   const label = document.getElementById("dept-kpi-date-label");
@@ -2173,7 +2283,7 @@ function renderDepartmentKpiสรุปข้อมูล() {
   if (overall) overall.textContent = `รวม ${totalActual}/${totalTarget || "-"} รายการ (${totalPct}%)`;
 }
 
-function renderสรุปข้อมูล(data) {
+function renderDashboard(data) {
   currentDisplayedData = data;
   document.getElementById("dash-loader").classList.add("hidden");
   let normal = 0;
@@ -2190,7 +2300,7 @@ function renderสรุปข้อมูล(data) {
     equipCount[eqShort] = (equipCount[eqShort] || 0) + 1;
   });
 
-  renderDepartmentKpiสรุปข้อมูล();
+  renderDepartmentKpiDashboard();
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
@@ -2210,8 +2320,8 @@ function renderสรุปข้อมูล(data) {
         <td class="px-3 py-1.5 border-r text-[11px] leading-tight">${escapeHTML(row.timestamp || row.checkDate || "-")}</td>
         <td class="px-3 py-1.5 truncate max-w-[140px] border-r text-[11px] leading-tight" title="${escapeHTML(row.dept || "-")}">${escapeHTML(row.dept || "-")}</td>
         <td class="px-3 py-1.5 border-r text-[11px] leading-tight">${escapeHTML(eqShort)}</td>
-        <td class="px-3 py-1.5 font-semibold text-uth-700 border-r text-[11px] leading-tight">${escapeHTML(row.sn || "-")}</td>
-        <td class="px-3 py-1.5 border-r text-[11px] leading-tight">${escapeHTML(row.deviceIdCode || "-")}</td>
+        <td class="px-3 py-1.5 font-semibold text-uth-700 border-r text-[11px] leading-tight">${escapeHTML(row.deviceIdCode || "-")}</td>
+        <td class="px-3 py-1.5 border-r text-[11px] leading-tight">${escapeHTML(row.sn || "-")}</td>
         <td class="px-3 py-1.5 border-r text-[11px] leading-tight">${escapeHTML(row.assetNo || "-")}</td>
         <td class="px-3 py-1.5 text-center border-r">${sHtml}</td>
         <td class="px-3 py-1.5 truncate max-w-[110px] border-r text-[11px] leading-tight" title="${escapeHTML(row.inspector || '-')}">${escapeHTML(row.inspector || '-')}</td>
@@ -2465,9 +2575,9 @@ function openModalByIndex(i) {
   _modalEditingRow = row;
 
   document.getElementById("md-time").innerText = row.timestamp || row.checkDate || "-";
-  document.getElementById("md-sn").innerText = row.sn || "-";
+  document.getElementById("md-sn").innerText = row.deviceIdCode || "-";
   const mdDeviceId = document.getElementById("md-device-id");
-  if (mdDeviceId) mdDeviceId.innerText = row.deviceIdCode || "-";
+  if (mdDeviceId) mdDeviceId.innerText = row.sn || "-";
   const mdAssetNo = document.getElementById("md-asset-no");
   if (mdAssetNo) mdAssetNo.innerText = row.assetNo || "-";
   document.getElementById("md-equip").innerText = row.equip || "-";
@@ -2513,7 +2623,7 @@ function openPdfPreview() {
   showLoading("กำลังสร้าง Preview PDF...", "กำลังจัดหน้าเอกสารรายงาน");
   setTimeout(() => hideLoading(true), 700);
   if (!lastFilteredData || lastFilteredData.length === 0) {
-    alert("ไม่พบข้อมูลสำหรับ Export PDF กรุณาเลือก Filter หรือโหลด สรุปข้อมูล ก่อน");
+    alert("ไม่พบข้อมูลสำหรับ Export PDF กรุณาเลือก Filter หรือโหลด Dashboard ก่อน");
     return;
   }
   renderPdfTemplate(lastFilteredData);
@@ -2836,7 +2946,7 @@ function goPage(dir) {
   const totalPages = Math.ceil((lastFilteredData || []).length / ROWS_PER_PAGE);
   if (dir === 'next' && currentPage < totalPages) currentPage++;
   else if (dir === 'prev' && currentPage > 1) currentPage--;
-  renderสรุปข้อมูล(lastFilteredData);
+  renderDashboard(lastFilteredData);
 }
 
 
@@ -2847,15 +2957,15 @@ const DASHBOARD_RESYNC_MS = 60 * 1000;
 let dashboardResyncTimer = null;
 let dashboardIsSyncing = false;
 
-function isสรุปข้อมูลVisible() {
+function isDashboardVisible() {
   const dash = document.getElementById("dashboard-page");
   return dash && !dash.classList.contains("page-hidden");
 }
 
-async function resyncสรุปข้อมูลDataSilent() {
-  if (dashboardIsSyncing || !isสรุปข้อมูลVisible()) return;
+async function resyncDashboardDataSilent() {
+  if (dashboardIsSyncing || !isDashboardVisible()) return;
   dashboardIsSyncing = true;
-  const keepState = captureสรุปข้อมูลUiState();
+  const keepState = captureDashboardUiState();
 
   try {
     const res = await callAppsScript("dashboard");
@@ -2864,7 +2974,7 @@ async function resyncสรุปข้อมูลDataSilent() {
     globalRawData = (res.rows || []).map(normalizeRow);
     globalDeptSettings = res.deptSettings || globalDeptSettings || [];
     initFilters({ keepUserSelection: true });
-    restoreสรุปข้อมูลUiState(keepState);
+    restoreDashboardUiState(keepState);
     applyFilter({ preservePage: true });
   } catch (e) {
     console.warn("Auto resync dashboard failed:", e);
@@ -2873,9 +2983,9 @@ async function resyncสรุปข้อมูลDataSilent() {
   }
 }
 
-function startสรุปข้อมูลAutoResync() {
+function startDashboardAutoResync() {
   if (dashboardResyncTimer) clearInterval(dashboardResyncTimer);
-  dashboardResyncTimer = setInterval(resyncสรุปข้อมูลDataSilent, DASHBOARD_RESYNC_MS);
+  dashboardResyncTimer = setInterval(resyncDashboardDataSilent, DASHBOARD_RESYNC_MS);
 }
 
 // ==========================================
@@ -2896,7 +3006,7 @@ function exportSinglePdf(idx) {
 // ==========================================
 function exportAllPdf() {
   if (!lastFilteredData || lastFilteredData.length === 0) {
-    alert("ไม่พบข้อมูลสำหรับ Export กรุณาโหลด สรุปข้อมูล ก่อน");
+    alert("ไม่พบข้อมูลสำหรับ Export กรุณาโหลด Dashboard ก่อน");
     return;
   }
   renderPdfTemplate(lastFilteredData);
@@ -2920,8 +3030,8 @@ function exportAllExcel() {
       '"' + (r.timestamp || r.checkDate || "-") + '"',
       '"' + (r.dept || "-") + '"',
       '"' + (equipmentShort(r.equip) || "-") + '"',
-      '"' + (r.sn || "-") + '"',
       '"' + (r.deviceIdCode || "-") + '"',
+      '"' + (r.sn || "-") + '"',
       '"' + (r.assetNo || "-") + '"',
       '"' + (isNormalStatus(r.status) ? "พร้อมใช้งาน" : "ชำรุด") + '"',
       '"' + (r.inspector || "-") + '"',

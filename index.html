@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Check รพ.อุทัยธานี</title>
-  <link rel="icon" type="image/png" href="./logo-uth.png?v=5.24">
-  <link rel="shortcut icon" type="image/png" href="./logo-uth.png?v=5.24">
-  <link rel="apple-touch-icon" href="./logo-uth.png?v=5.24">
+  <link rel="icon" type="image/png" href="./logo-uth.png?v=5.25">
+  <link rel="shortcut icon" type="image/png" href="./logo-uth.png?v=5.25">
+  <link rel="apple-touch-icon" href="./logo-uth.png?v=5.25">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -669,40 +669,45 @@
 
 
   <!-- LOGIN OVERLAY -->
-  <div id="login-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100">
-    <div class="w-full max-w-[505px] bg-white rounded-[28px] shadow-2xl border border-slate-100 p-8 sm:p-10 text-center">
+  <div id="login-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100 overflow-y-auto">
+    <div class="w-full max-w-[560px] bg-white rounded-[28px] shadow-2xl border border-slate-100 p-7 sm:p-9 text-center my-6">
       <div class="mx-auto w-24 h-24 rounded-3xl bg-white shadow-xl border border-slate-100 flex items-center justify-center mb-6">
-        <img src="logo-uth.png" class="w-16 h-16 object-contain" alt="UTH">
+        <img src="logo-uth.png?v=5.25" class="w-16 h-16 object-contain" alt="UTH">
       </div>
 
       <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">UTH Daily Check</h1>
-      <p class="mt-2 text-sm sm:text-base font-black tracking-widest text-slate-400 uppercase">Medical Equipment Service System</p>
+      <p class="mt-2 text-sm sm:text-base font-black tracking-widest text-slate-400 uppercase">ระบบตรวจสอบเครื่องมือแพทย์ประจำวัน</p>
 
-      <div class="mt-9 text-left">
-        <label class="block text-xs font-black text-slate-500 uppercase tracking-wide mb-2">Login Code Only</label>
+      <div class="mt-8 text-left">
+        <label class="block text-xs font-black text-slate-500 uppercase tracking-wide mb-2">รหัสแผนกเท่านั้น</label>
         <div class="relative">
           <i data-lucide="id-card" class="w-5 h-5 text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
-          <input id="login-code-input" type="text" inputmode="text" autocomplete="off" placeholder="Enter department code"
-            class="w-full h-16 pl-14 pr-5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-xl font-bold tracking-wide outline-none focus:border-uth-500 focus:ring-4 focus:ring-uth-100 shadow-sm">
+          <input id="login-code-input" type="text" inputmode="text" autocomplete="off" placeholder="กรอกรหัสแผนก เช่น ADMF, ER, OR"
+            class="w-full h-16 pl-14 pr-5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-xl font-bold tracking-wide outline-none focus:border-uth-500 focus:ring-4 focus:ring-uth-100 shadow-sm uppercase">
         </div>
-        <p class="mt-2 text-xs text-slate-400">ใช้รหัสแผนกเท่านั้น เช่น ADMF, ADMM, ER, OR</p>
+        <p class="mt-2 text-xs text-slate-400">ใช้รหัสแผนกที่กำหนดในชีต UserLogin เท่านั้น</p>
       </div>
 
       <label class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
-        <input id="login-remember" type="checkbox" checked class="accent-uth-600"> Remember this device
+        <input id="login-remember" type="checkbox" checked class="accent-uth-600"> จดจำอุปกรณ์นี้
       </label>
 
-      <p id="login-error" class="hidden mt-3 text-sm text-red-600 font-bold">รหัสไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน</p>
+      <p id="login-error" class="hidden mt-3 text-sm text-red-600 font-bold">รหัสแผนกไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน</p>
 
       <button onclick="submitLoginCode()" class="mt-6 w-full h-16 rounded-2xl bg-slate-950 hover:bg-uth-800 text-white text-lg font-black shadow-xl transition-all active:scale-[.98]">
-        Login / Check ID →
+        เข้าสู่ระบบ / ตรวจรหัส →
       </button>
 
-      <div class="mt-8 text-sm text-slate-500">
-        <div>Don't have an account?</div>
-        <button onclick="showRequestAccessInfo()" class="mt-2 text-indigo-600 font-black hover:underline">Request Department Code</button>
+      <div class="mt-6 grid grid-cols-2 gap-2 text-xs">
+        <button onclick="showUsageInfo('login')" class="rounded-xl border border-uth-200 bg-uth-50 text-uth-700 font-bold py-2.5 hover:bg-uth-100 flex items-center justify-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> วิธีเข้าสู่ระบบ</button>
+        <button onclick="showUsageInfo('form')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> วิธีบันทึกตรวจ</button>
+        <button onclick="showUsageInfo('dashboard')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> วิธีดูรายการสรุป</button>
+        <button onclick="showUsageInfo('settings')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="settings" class="w-3.5 h-3.5"></i> วิธีตั้งค่า</button>
       </div>
 
+      <div class="mt-7 text-sm text-slate-500">
+        <div>ยังไม่มีรหัสแผนก?</div>
+        <button onclick="openAccessRequestModal()" class="mt-2 text-uth-700 font-black hover:underline">ขอเปิดใช้งานรหัสแผนก</button>
       </div>
     </div>
   </div>
@@ -725,14 +730,14 @@
             <div id="clock-time" class="text-uth-200"></div>
           </div>
           <button onclick="switchTab('form')" id="tab-form-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all bg-white/20 text-white flex items-center gap-2"><i data-lucide="clipboard-edit" class="w-4 h-4"></i> บันทึกการตรวจสอบประจำวัน</button>
-          <button onclick="switchTab('dashboard')" id="tab-dash-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> สรุปข้อมูล / ส่งออก</button>
+          <button onclick="switchTab('dashboard')" id="tab-dash-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> รายการสรุป</button>
           <button onclick="switchTab('settings')" id="tab-settings-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> ตั้งค่า</button>
           <button onclick="logoutDailyCheck()" id="logout-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
         </div>
       </div>
       <div class="flex sm:hidden border-t border-uth-500/50">
         <button onclick="switchTab('form')" id="tab-form-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-white text-white">บันทึกการตรวจ</button>
-        <button onclick="switchTab('dashboard')" id="tab-dash-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">สรุปข้อมูล</button>
+        <button onclick="switchTab('dashboard')" id="tab-dash-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">รายการสรุป</button>
         <button onclick="switchTab('settings')" id="tab-settings-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">ตั้งค่า</button>
       </div>
     </div>
@@ -746,9 +751,7 @@
         <div class="flex items-center gap-2 mb-6 text-uth-800 border-b border-slate-100 pb-4">
           <i data-lucide="file-check-2" class="w-6 h-6"></i>
           <h2 class="text-xl font-bold">บันทึกการตรวจสอบประจำวัน</h2>
-          <button type="button" onclick="showUsageInfo()" title="วิธีใช้งานเบื้องต้น" class="ml-auto w-8 h-8 rounded-full bg-uth-50 text-uth-700 border border-uth-200 hover:bg-uth-100 flex items-center justify-center">
-            <i data-lucide="info" class="w-4 h-4"></i>
-          </button>
+          <button type="button" onclick="showUsageInfo('form')" title="วิธีใช้งานหน้านี้" class="ml-auto w-8 h-8 rounded-full bg-uth-50 text-uth-700 border border-uth-200 hover:bg-uth-100 flex items-center justify-center"><i data-lucide="info" class="w-4 h-4"></i></button>
         </div>
 
         <form id="daily-form" class="space-y-6">
@@ -885,11 +888,11 @@
     <main id="dashboard-page" class="flex-1 page-hidden w-full flex flex-col">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-slate-800">สรุปข้อมูล Daily Check เครื่องมือแพทย์ทั้งหมด</h2>
+          <div class="flex items-center gap-2"><h2 class="text-2xl font-bold text-slate-800">แดชบอร์ดสรุปข้อมูลการตรวจสอบเครื่องมือแพทย์ประจำวัน</h2><button type="button" onclick="showUsageInfo('dashboard')" title="วิธีใช้งานหน้านี้" class="w-8 h-8 rounded-full bg-uth-50 text-uth-700 border border-uth-200 hover:bg-uth-100 flex items-center justify-center"><i data-lucide="info" class="w-4 h-4"></i></button></div>
           <p class="text-sm text-slate-500">กรองข้อมูล / ดูสัดส่วนประเภทเครื่องมือ / Preview และ ส่งออก PDF รายวัน</p>
         </div>
         <div class="flex flex-wrap gap-2 self-end sm:self-auto justify-end">
-          <button onclick="openMonthlySummary()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> รายงานรายเดือน</button>
+          <button onclick="openMonthlySummary()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> รายเดือน</button>
           <button onclick="openPdfPreview()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i> ส่งออก PDF</button>
           <button onclick="exportAllExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> ส่งออก Excel</button>
           <button onclick="downloadTemplate()" class="px-3 py-2 bg-white hover:bg-slate-50 text-uth-700 border border-uth-200 rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="table" class="w-4 h-4"></i> Template Excel</button>
@@ -1031,7 +1034,7 @@
     <main id="settings-page" class="flex-1 page-hidden w-full max-w-5xl mx-auto">
       <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden settings-card">
         <div class="bg-gradient-to-r from-uth-800 to-uth-600 p-5 text-white">
-          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5"></i> ตั้งค่าระบบ Daily Check</h2>
+          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5"></i> ตั้งค่าระบบ Daily Check <button type="button" onclick="showUsageInfo('settings')" title="วิธีใช้งานหน้านี้" class="ml-2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"><i data-lucide="info" class="w-4 h-4"></i></button></h2>
           <p class="text-xs text-uth-100 mt-1">แก้ไขการเชื่อมต่อ / ผู้ดูแลระบบ / Login code</p>
         </div>
 
@@ -1145,21 +1148,56 @@
 
     <!-- USAGE INFO MODAL -->
     <div id="usage-info-modal" class="fixed inset-0 bg-black/50 z-[120] hidden items-center justify-center p-4 backdrop-blur-sm">
-      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div class="bg-uth-700 text-white px-5 py-4 flex items-center justify-between">
-          <h3 class="font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> วิธีใช้งานเบื้องต้น</h3>
+          <h3 id="usage-info-title" class="font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> วิธีใช้งานเบื้องต้น</h3>
           <button onclick="closeUsageInfo()" class="p-1 rounded-xl hover:bg-white/15"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div class="p-5 space-y-3 text-sm text-slate-700 leading-relaxed">
-          <div><b>1.</b> Login ด้วย Department Code ของแผนก</div>
-          <div><b>2.</b> เลือกแผนกและประเภทเครื่องมือ</div>
-          <div><b>3.</b> กรอก <b>ID CODE</b> เป็นข้อมูลบังคับ ส่วน SN และหมายเลขครุภัณฑ์ไม่บังคับ</div>
-          <div><b>4.</b> ตรวจ Checklist เลือก PASS/FAIL และแนบรูปภาพ</div>
-          <div><b>5.</b> กดบันทึก ระบบจะส่งข้อมูลเข้า Google Sheet และแสดงใน Dashboard</div>
-        </div>
+        <div id="usage-info-body" class="p-5 text-sm text-slate-700 leading-relaxed space-y-3"></div>
         <div class="px-5 pb-5">
           <button onclick="closeUsageInfo()" class="w-full bg-uth-700 hover:bg-uth-800 text-white font-bold py-3 rounded-2xl">เข้าใจแล้ว</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ACCESS REQUEST MODAL -->
+    <div id="access-request-modal" class="fixed inset-0 bg-black/50 z-[121] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-uth-700 text-white px-5 py-4 flex items-center justify-between">
+          <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5"></i> ขอเปิดใช้งานรหัสแผนก</h3>
+          <button onclick="closeAccessRequestModal()" class="p-1 rounded-xl hover:bg-white/15"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <form id="access-request-form" class="p-5 space-y-3">
+          <div>
+            <label class="text-xs font-bold text-slate-600">ชื่อผู้ขอใช้งาน <span class="text-red-500">*</span></label>
+            <input id="req-name" required type="text" class="mt-1 w-full p-3 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-uth-500" placeholder="ชื่อ-นามสกุล">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">อีเมลผู้ขอใช้งาน <span class="text-red-500">*</span></label>
+            <input id="req-email" required type="email" class="mt-1 w-full p-3 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-uth-500" placeholder="name@example.com">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-slate-600">รหัสแผนกที่ต้องการ <span class="text-red-500">*</span></label>
+              <input id="req-code" required type="text" class="mt-1 w-full p-3 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-uth-500 uppercase" placeholder="เช่น ADMF, ER, OR">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600">ชื่อแผนก <span class="text-red-500">*</span></label>
+              <input id="req-dept" required type="text" class="mt-1 w-full p-3 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-uth-500" placeholder="เช่น อายุรกรรมหญิง">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">เบอร์โทร / หมายเหตุเพิ่มเติม</label>
+            <textarea id="req-note" rows="3" class="mt-1 w-full p-3 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-uth-500" placeholder="ระบุข้อมูลเพิ่มเติมเพื่อให้ผู้ดูแลระบบอนุมัติ"></textarea>
+          </div>
+          <div class="bg-uth-50 border border-uth-100 text-uth-800 text-xs rounded-2xl p-3">
+            ระบบจะส่งคำขอไปที่ผู้ดูแลระบบเพื่ออนุมัติ เมื่ออนุมัติแล้ว ผู้ขอจะได้รับอีเมลแจ้งรหัสแผนกพร้อมปุ่มเข้าสู่เว็บไซต์
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="button" onclick="closeAccessRequestModal()" class="flex-1 py-3 rounded-2xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">ยกเลิก</button>
+            <button type="submit" class="flex-1 py-3 rounded-2xl bg-uth-700 text-white font-bold hover:bg-uth-800">ส่งคำขอ</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1224,8 +1262,8 @@
 
   </div>
 
-  <script src="config.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
-  <script src="script.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
-  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
+  <script src="config.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
+  <script src="script.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
+  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
 </body>
 </html>
