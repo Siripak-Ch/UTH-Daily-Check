@@ -378,7 +378,7 @@ async function loadSettingsBundleCompat() {
     departmentSettings,
     equipment,
     fallbackMode: true,
-    version: "V5.31_FAST_FLEX_DEPT_ACTIONS"
+    version: "V5.32_LINE_DEPT_MESSAGE_ACTION"
   };
 }
 
@@ -426,7 +426,7 @@ async function loadSettingsForm(forceRefresh = false) {
       userLogin: getVal(1, { success: false, error: "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ" }),
       departmentSettings: getVal(2, { success: false, error: "โหลด KPI จากชีตไม่สำเร็จ" }),
       equipment: getVal(3, { success: true, equipmentList: [] }),
-      version: "V5.31_FAST_FLEX_DEPT_ACTIONS"
+      version: "V5.32_LINE_DEPT_MESSAGE_ACTION"
     };
     if (!bundle.equipment || !bundle.equipment.success) {
       bundle.equipment = { success: true, equipmentList: (bundle.departmentSettings && bundle.departmentSettings.equipmentList) || [] };
@@ -1529,7 +1529,7 @@ function setupBranding() {
       link.rel = rel;
       document.head.appendChild(link);
     }
-    link.href = "./" + String(logo).replace("./", "") + "?v=5.31";
+    link.href = "./" + String(logo).replace("./", "") + "?v=5.32";
     if (rel !== "apple-touch-icon") link.type = "image/png";
   });
 }
