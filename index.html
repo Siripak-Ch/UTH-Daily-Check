@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Check รพ.อุทัยธานี</title>
-  <link rel="icon" type="image/png" href="./logo-uth.png?v=5.25">
-  <link rel="shortcut icon" type="image/png" href="./logo-uth.png?v=5.25">
-  <link rel="apple-touch-icon" href="./logo-uth.png?v=5.25">
+  <link rel="icon" type="image/png" href="./logo-uth.png?v=5.30">
+  <link rel="shortcut icon" type="image/png" href="./logo-uth.png?v=5.30">
+  <link rel="apple-touch-icon" href="./logo-uth.png?v=5.30">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -653,6 +653,148 @@
       }
     }
 
+  
+    /* FINAL V5.27: KPI dashboard readable + overlay rectangular bars */
+    #dept-kpi-card {
+      overflow: hidden;
+    }
+    #dept-kpi-overall {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-width: 180px !important;
+      min-height: 42px !important;
+      padding: 10px 16px !important;
+      border-radius: 18px !important;
+      background: linear-gradient(180deg,#fff5fd,#fdf2ff) !important;
+      border: 1px solid #f0c7eb !important;
+      box-shadow: 0 8px 18px rgba(146,39,143,.08) !important;
+      text-align: center !important;
+      white-space: normal !important;
+      line-height: 1.25 !important;
+    }
+    .kpi-chart-wrap {
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      padding: 10px 10px 18px !important;
+      min-height: 520px !important;
+      border-radius: 22px !important;
+    }
+    .kpi-chart {
+      min-width: 1180px !important;
+      height: 470px !important;
+      align-items: flex-start !important;
+      gap: 18px !important;
+      padding: 34px 22px 30px !important;
+      box-sizing: border-box !important;
+      border-radius: 22px !important;
+      background:
+        linear-gradient(to top, #edf2f7 1px, transparent 1px) 0 0/100% 20%,
+        #ffffff !important;
+    }
+    .kpi-bar-group {
+      flex: 0 0 116px !important;
+      width: 116px !important;
+      height: 405px !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: flex-start !important;
+      padding-top: 34px !important;
+      position: relative !important;
+      box-sizing: border-box !important;
+    }
+    .kpi-bar-stack {
+      position: relative !important;
+      width: 42px !important;
+      height: 300px !important;
+      margin: 0 auto !important;
+      display: block !important;
+      overflow: visible !important;
+    }
+    .kpi-bar-target,
+    .kpi-bar-actual {
+      position: absolute !important;
+      left: 0 !important;
+      bottom: 0 !important;
+      width: 42px !important;
+      border-radius: 4px 4px 0 0 !important;
+      min-height: 0 !important;
+      box-sizing: border-box !important;
+    }
+    .kpi-bar-target {
+      background: #dfe7f2 !important;
+      border: 1px solid #c9d5e4 !important;
+      z-index: 1 !important;
+    }
+    .kpi-bar-actual {
+      background: #92278f !important;
+      border: 1px solid #92278f !important;
+      z-index: 2 !important;
+    }
+    .kpi-bar-percent {
+      position: absolute !important;
+      top: -34px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 4 !important;
+      background: #fdf2ff !important;
+      border: 1px solid #f0c7eb !important;
+      color: #a21caf !important;
+      border-radius: 999px !important;
+      padding: 3px 8px !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      white-space: nowrap !important;
+    }
+    .kpi-dept-label {
+      position: absolute !important;
+      top: 350px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 112px !important;
+      min-height: 52px !important;
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      text-align: center !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      line-height: 1.25 !important;
+      color: #334155 !important;
+      word-break: break-word !important;
+      background: rgba(255,255,255,.90) !important;
+      border: 1px solid #f1f5f9 !important;
+      border-radius: 12px !important;
+      padding: 5px 5px !important;
+    }
+    .kpi-tooltip { z-index: 50 !important; }
+    @media (max-width: 640px) {
+      #dept-kpi-overall {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .kpi-chart-wrap {
+        min-height: 500px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+      }
+      .kpi-chart {
+        min-width: 1020px !important;
+        height: 455px !important;
+        gap: 12px !important;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+      }
+      .kpi-bar-group {
+        flex-basis: 102px !important;
+        width: 102px !important;
+      }
+      .kpi-dept-label {
+        width: 98px !important;
+        font-size: 10px !important;
+      }
+    }
+
   </style>
 </head>
 <body class="text-slate-800 flex flex-col items-center min-h-screen">
@@ -672,14 +814,19 @@
   <div id="login-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100 overflow-y-auto">
     <div class="w-full max-w-[560px] bg-white rounded-[28px] shadow-2xl border border-slate-100 p-7 sm:p-9 text-center my-6">
       <div class="mx-auto w-24 h-24 rounded-3xl bg-white shadow-xl border border-slate-100 flex items-center justify-center mb-6">
-        <img src="logo-uth.png?v=5.25" class="w-16 h-16 object-contain" alt="UTH">
+        <img src="logo-uth.png?v=5.30" class="w-16 h-16 object-contain" alt="UTH">
       </div>
 
       <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">UTH Daily Check</h1>
-      <p class="mt-2 text-sm sm:text-base font-black tracking-widest text-slate-400 uppercase">ระบบตรวจสอบเครื่องมือแพทย์ประจำวัน</p>
+      <p class="mt-2 text-sm sm:text-base font-black tracking-widest text-slate-400">ระบบตรวจสอบเครื่องมือแพทย์ประจำวัน</p>
 
       <div class="mt-8 text-left">
-        <label class="block text-xs font-black text-slate-500 uppercase tracking-wide mb-2">รหัสแผนกเท่านั้น</label>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-xs font-black text-slate-500">รหัสแผนกเท่านั้น</label>
+          <button type="button" onclick="showUsageInfo('login')" class="text-xs text-uth-700 font-black hover:underline flex items-center gap-1">
+            <i data-lucide="info" class="w-3.5 h-3.5"></i> วิธีเข้าสู่ระบบ
+          </button>
+        </div>
         <div class="relative">
           <i data-lucide="id-card" class="w-5 h-5 text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
           <input id="login-code-input" type="text" inputmode="text" autocomplete="off" placeholder="กรอกรหัสแผนก เช่น ADMF, ER, OR"
@@ -688,27 +835,20 @@
         <p class="mt-2 text-xs text-slate-400">ใช้รหัสแผนกที่กำหนดในชีต UserLogin เท่านั้น</p>
       </div>
 
-      <label class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
-        <input id="login-remember" type="checkbox" checked class="accent-uth-600"> จดจำอุปกรณ์นี้
-      </label>
-
       <p id="login-error" class="hidden mt-3 text-sm text-red-600 font-bold">รหัสแผนกไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน</p>
 
       <button onclick="submitLoginCode()" class="mt-6 w-full h-16 rounded-2xl bg-slate-950 hover:bg-uth-800 text-white text-lg font-black shadow-xl transition-all active:scale-[.98]">
         เข้าสู่ระบบ / ตรวจรหัส →
       </button>
 
-      <div class="mt-6 grid grid-cols-2 gap-2 text-xs">
-        <button onclick="showUsageInfo('login')" class="rounded-xl border border-uth-200 bg-uth-50 text-uth-700 font-bold py-2.5 hover:bg-uth-100 flex items-center justify-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> วิธีเข้าสู่ระบบ</button>
-        <button onclick="showUsageInfo('form')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> วิธีบันทึกตรวจ</button>
-        <button onclick="showUsageInfo('dashboard')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> วิธีดูรายการสรุป</button>
-        <button onclick="showUsageInfo('settings')" class="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold py-2.5 hover:bg-slate-50 flex items-center justify-center gap-1"><i data-lucide="settings" class="w-3.5 h-3.5"></i> วิธีตั้งค่า</button>
-      </div>
-
       <div class="mt-7 text-sm text-slate-500">
         <div>ยังไม่มีรหัสแผนก?</div>
         <button onclick="openAccessRequestModal()" class="mt-2 text-uth-700 font-black hover:underline">ขอเปิดใช้งานรหัสแผนก</button>
       </div>
+
+      <label class="mt-7 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <input id="login-remember" type="checkbox" checked class="accent-uth-600"> จดจำอุปกรณ์นี้
+      </label>
     </div>
   </div>
 
@@ -1065,6 +1205,32 @@
                   <input id="setting-summary-time" type="time" value="17:00">
                   <p class="text-xs text-slate-500">ใช้สำหรับตั้ง Trigger ส่งสรุปรายวัน</p>
                 </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">LINE API Token / Channel Access Token</label>
+                  <input id="setting-line-token" type="password" placeholder="ใส่ LINE Messaging API Channel Access Token">
+                  <p class="text-xs text-slate-500">ใช้สำหรับส่งแจ้งเตือนเข้า LINE หากไม่ต้องการใช้ให้เว้นว่าง</p>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">LINE User ID สำหรับ Direct OA</label>
+                  <input id="setting-line-to" type="text" placeholder="เช่น Uxxxxxxxx หรือปล่อยว่างเพื่อให้ระบบจำจากผู้ที่ทัก OA">
+                  <p class="text-xs text-slate-500">ปลายทางสำหรับ Push Message แบบคุยกับ OA โดยตรง — ถ้าปล่อยว่าง ระบบจะจำ User ID อัตโนมัติเมื่อผู้ใช้ทัก OA</p>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">LINE Official Account ID</label>
+                  <input id="setting-line-oa" type="text" placeholder="@447vrpet">
+                  <p class="text-xs text-slate-500">ใช้สำหรับอ้างอิง OA เท่านั้น ส่วน Push แบบ Direct ใช้ User ID ที่ระบบจำอัตโนมัติ</p>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-bold text-slate-700">Stock Master Sheet Name</label>
+                  <input id="setting-stock-master" type="text" placeholder="รายการสินค้า">
+                  <p class="text-xs text-slate-500">ถ้ามีชีต stock จะใช้กับคำสั่ง LINE: stock + keyword</p>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                  <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-800 leading-relaxed">
+                    <b>คำสั่ง LINE Direct OA ที่รองรับ:</b> เมนู, + flex menu, แผนก, สรุปวันนี้, KPI, ชำรุด, id, ค้นหา ID/SN/ครุภัณฑ์, stock + ชื่อสินค้า<br>
+                    <b>Webhook URL:</b> ใช้ Apps Script Web App URL เดียวกับระบบนี้ — ไม่ต้อง Add Group ถ้าใช้คุยกับ OA โดยตรง
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1147,7 +1313,7 @@
 
 
     <!-- USAGE INFO MODAL -->
-    <div id="usage-info-modal" class="fixed inset-0 bg-black/50 z-[120] hidden items-center justify-center p-4 backdrop-blur-sm">
+    <div id="usage-info-modal" class="fixed inset-0 bg-black/50 z-[100001] hidden items-center justify-center p-4 backdrop-blur-sm">
       <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div class="bg-uth-700 text-white px-5 py-4 flex items-center justify-between">
           <h3 id="usage-info-title" class="font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> วิธีใช้งานเบื้องต้น</h3>
@@ -1161,7 +1327,7 @@
     </div>
 
     <!-- ACCESS REQUEST MODAL -->
-    <div id="access-request-modal" class="fixed inset-0 bg-black/50 z-[121] hidden items-center justify-center p-4 backdrop-blur-sm">
+    <div id="access-request-modal" class="fixed inset-0 bg-black/50 z-[100002] hidden items-center justify-center p-4 backdrop-blur-sm">
       <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div class="bg-uth-700 text-white px-5 py-4 flex items-center justify-between">
           <h3 class="font-bold flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5"></i> ขอเปิดใช้งานรหัสแผนก</h3>
@@ -1262,8 +1428,8 @@
 
   </div>
 
-  <script src="config.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
-  <script src="script.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
-  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-25-LOGIN-HELP-REQUEST-ACCESS"></script>
+  <script src="config.js?v=FINAL-V5-30-LINE-FLEX-DEPT-MENU"></script>
+  <script src="script.js?v=FINAL-V5-30-LINE-FLEX-DEPT-MENU"></script>
+  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-30-LINE-FLEX-DEPT-MENU"></script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-const FRONTEND_VERSION = "V5.25_LOGIN_HELP_REQUEST_ACCESS";
 /*
 Daily Check Frontend V2
 - GitHub Pages frontend
@@ -379,7 +378,7 @@ async function loadSettingsBundleCompat() {
     departmentSettings,
     equipment,
     fallbackMode: true,
-    version: "V5.25_FRONT_DIRECT_LOAD"
+    version: "V5.30_LINE_FLEX_DEPARTMENT_MENU"
   };
 }
 
@@ -427,7 +426,7 @@ async function loadSettingsForm(forceRefresh = false) {
       userLogin: getVal(1, { success: false, error: "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ" }),
       departmentSettings: getVal(2, { success: false, error: "โหลด KPI จากชีตไม่สำเร็จ" }),
       equipment: getVal(3, { success: true, equipmentList: [] }),
-      version: "V5.25_FRONT_DIRECT_LOAD"
+      version: "V5.30_LINE_FLEX_DEPARTMENT_MENU"
     };
     if (!bundle.equipment || !bundle.equipment.success) {
       bundle.equipment = { success: true, equipmentList: (bundle.departmentSettings && bundle.departmentSettings.equipmentList) || [] };
@@ -502,7 +501,11 @@ function applySettingsBundleToUi(bundle) {
       "setting-sheet-link": settings.sheetLink || cfg.SHEET_LINK || "",
       "setting-admin-email": settings.adminEmail || "",
       "setting-root-folder": settings.rootFolderId || "",
-      "setting-summary-time": settings.summaryTime || "17:00"
+      "setting-summary-time": settings.summaryTime || "17:00",
+      "setting-line-token": settings.lineToken || "",
+      "setting-line-to": settings.lineToId || "",
+      "setting-line-oa": settings.lineOfficialId || "@447vrpet",
+      "setting-stock-master": settings.stockMasterSheet || "รายการสินค้า"
     };
     Object.entries(map).forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -536,7 +539,11 @@ function buildCurrentSettingsBundleFromUi() {
       sheetLink: (document.getElementById("setting-sheet-link") || {}).value || "",
       adminEmail: (document.getElementById("setting-admin-email") || {}).value || "",
       rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
-      summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
+      summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00",
+      lineToken: (document.getElementById("setting-line-token") || {}).value || "",
+      lineToId: (document.getElementById("setting-line-to") || {}).value || "",
+      lineOfficialId: (document.getElementById("setting-line-oa") || {}).value || "@447vrpet",
+      stockMasterSheet: (document.getElementById("setting-stock-master") || {}).value || "รายการสินค้า"
     },
     userLogin: { success: true, users: globalUserLoginRows || [] },
     departmentSettings: { success: true, settings: globalDeptSettings || [], equipmentList: globalEquipmentList || [] },
@@ -957,7 +964,11 @@ async function saveSettings(options = {}) {
     sheetLink: (document.getElementById("setting-sheet-link") || {}).value || cfg.SHEET_LINK || "",
     adminEmail: (document.getElementById("setting-admin-email") || {}).value || "",
     rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
-    summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
+    summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00",
+      lineToken: (document.getElementById("setting-line-token") || {}).value || "",
+      lineToId: (document.getElementById("setting-line-to") || {}).value || "",
+      lineOfficialId: (document.getElementById("setting-line-oa") || {}).value || "@447vrpet",
+      stockMasterSheet: (document.getElementById("setting-stock-master") || {}).value || "รายการสินค้า"
   };
 
   if (!silent) showLoading("กำลังบันทึก Setting...", "บันทึกเฉพาะ SystemConfig เพื่อให้เร็วขึ้น");
@@ -968,7 +979,11 @@ async function saveSettings(options = {}) {
       spreadsheetId: extractSpreadsheetId(s.sheetLink) || (cfg.SPREADSHEET_ID || ""),
       sheetLink: s.sheetLink,
       rootFolderId: s.rootFolderId,
-      summaryTime: s.summaryTime
+      summaryTime: s.summaryTime,
+      lineToken: s.lineToken,
+      lineToId: s.lineToId,
+      lineOfficialId: s.lineOfficialId,
+      stockMasterSheet: s.stockMasterSheet
     });
     if (!res || !res.success) throw new Error((res && res.error) || "saveSettings failed");
     updateSettingsBundleCache({ settings: res });
@@ -1514,7 +1529,7 @@ function setupBranding() {
       link.rel = rel;
       document.head.appendChild(link);
     }
-    link.href = "./" + String(logo).replace("./", "") + "?v=5.25";
+    link.href = "./" + String(logo).replace("./", "") + "?v=5.30";
     if (rel !== "apple-touch-icon") link.type = "image/png";
   });
 }
@@ -1692,14 +1707,14 @@ function handleImageUpload(e) {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_SIZE = 800;
+        const MAX_SIZE = 640; // FINAL V5.26: smaller image = faster save
         let w = img.width, h = img.height;
         if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } }
         else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
         canvas.width = w;
         canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        base64Images.push({ base64: canvas.toDataURL("image/jpeg", 0.6), type: "image/jpeg" });
+        base64Images.push({ base64: canvas.toDataURL("image/jpeg", 0.50), type: "image/jpeg" });
         processed++;
         if (processed === toProcess.length) renderImagePreviews();
       };
@@ -1787,7 +1802,7 @@ async function handleSubmit(e) {
   submitBtn.disabled = true;
   lucide.createIcons();
 
-  showLoading("กำลังบันทึกข้อมูล...", "กำลังอัปโหลดรูปภาพ " + base64Images.length + " รูป และบันทึกลงระบบ กรุณารอสักครู่");
+  showLoading("กำลังบันทึกข้อมูลแบบเร็ว...", "กำลังบีบอัดรูปและบันทึกลง Google Sheet / Drive กรุณารอสักครู่");
 
   try {
     let res = await callAppsScript("save", formData);
@@ -1815,19 +1830,18 @@ async function handleSubmit(e) {
     }
 
     if (res && res.success) {
-      try {
-        await callAppsScript("log", Object.assign({
-          event: "save_check",
-          sessionId: window._sessionId || "-",
-          userName: formData.inspector || "-",
-          page: "form",
-          equipment: formData.equipment || "-",
-          department: formData.department || "-",
-          sn: formData.idCode || "-",
-          startTime: new Date().toISOString(),
-          userAgent: navigator.userAgent
-        }, getCurrentLoginLogInfo()));
-      } catch (logErr) { console.warn("save_check log failed", logErr); }
+      // FINAL V5.26: log แบบ fire-and-forget ไม่รอให้เสร็จ เพื่อลดเวลาบันทึกหน้าเว็บ
+      callAppsScript("log", Object.assign({
+        event: "save_check",
+        sessionId: window._sessionId || "-",
+        userName: formData.inspector || "-",
+        page: "form",
+        equipment: formData.equipment || "-",
+        department: formData.department || "-",
+        sn: formData.idCode || "-",
+        startTime: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      }, getCurrentLoginLogInfo())).catch(logErr => console.warn("save_check log failed", logErr));
       showSuccess(formData.idCode);
       globalRawData = [];
     } else {
@@ -2249,8 +2263,8 @@ function renderDepartmentKpiDashboard() {
     const actual = Number(item.actual || 0);
     const target = Number(item.target || 0);
     const pct = target > 0 ? Math.round((actual / target) * 100) : (actual > 0 ? 100 : 0);
-    const actualH = Math.max(actual > 0 ? 5 : 0, Math.round((actual / maxVal) * 230));
-    const targetH = Math.max(target > 0 ? 5 : 0, Math.round((target / maxVal) * 230));
+    const actualH = Math.max(actual > 0 ? 5 : 0, Math.round((actual / maxVal) * 300));
+    const targetH = Math.max(target > 0 ? 5 : 0, Math.round((target / maxVal) * 300));
     const title = escapeHTML(item.fullName || item.name);
     const shortName = escapeHTML(item.name || "-");
     const pctText = target > 0 ? pct + "%" : (actual > 0 ? "100%" : "0%");
@@ -2280,7 +2294,7 @@ function renderDepartmentKpiDashboard() {
       <div class="kpi-chart">${bars}</div>
     </div>`;
 
-  if (overall) overall.textContent = `รวม ${totalActual}/${totalTarget || "-"} รายการ (${totalPct}%)`;
+  if (overall) overall.innerHTML = `<span>รวม ${totalActual}/${totalTarget || "-"} รายการ</span><span class="ml-1 text-uth-900">(${totalPct}%)</span>`;
 }
 
 function renderDashboard(data) {
