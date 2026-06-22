@@ -581,6 +581,76 @@
       .kpi-dept-label { top:236px; width:96px; font-size:9px; }
     }
 
+  
+    /* FINAL V5.23: KPI label readable / no clipped diagonal labels */
+    .kpi-chart-wrap {
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      padding: 8px 8px 14px !important;
+    }
+    .kpi-chart {
+      min-width: 1180px !important;
+      height: 390px !important;
+      align-items: flex-start !important;
+      gap: 16px !important;
+      padding: 18px 18px 18px !important;
+      box-sizing: border-box !important;
+    }
+    .kpi-bar-group {
+      flex: 0 0 118px !important;
+      height: 350px !important;
+      align-items: flex-start !important;
+      justify-content: center !important;
+      padding-top: 36px !important;
+      box-sizing: border-box !important;
+    }
+    .kpi-bar-stack {
+      height: 220px !important;
+      width: 44px !important;
+      margin: 0 auto !important;
+    }
+    .kpi-dept-label {
+      position: absolute !important;
+      top: 270px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      transform-origin: center top !important;
+      width: 112px !important;
+      min-height: 48px !important;
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      text-align: center !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      line-height: 1.25 !important;
+      color: #334155 !important;
+      word-break: break-word !important;
+      background: rgba(255,255,255,.84) !important;
+      border-radius: 10px !important;
+      padding: 4px 5px !important;
+    }
+    .kpi-bar-percent {
+      top: -30px !important;
+      z-index: 2 !important;
+    }
+    @media (max-width: 640px) {
+      .kpi-chart {
+        min-width: 1050px !important;
+        height: 380px !important;
+        gap: 12px !important;
+      }
+      .kpi-bar-group {
+        flex-basis: 104px !important;
+        height: 340px !important;
+      }
+      .kpi-dept-label {
+        top: 265px !important;
+        width: 98px !important;
+        font-size: 10px !important;
+      }
+    }
+
   </style>
 </head>
 <body class="text-slate-800 flex flex-col items-center min-h-screen">
@@ -1128,8 +1198,8 @@
 
   </div>
 
-  <script src="config.js?v=FINAL-V5-22-CACHE-KPI-ADMIN-ONLY"></script>
-  <script src="script.js?v=FINAL-V5-22-CACHE-KPI-ADMIN-ONLY"></script>
-  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-22-CACHE-KPI-ADMIN-ONLY"></script>
+  <script src="config.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
+  <script src="script.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
+  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ Daily Check Frontend V2
 
 async function callAppsScript(action, data = null) {
   /*
-   * FINAL V5.22
+   * FINAL V5.23
    * - No local-sample data
    * - Always use current APPS_SCRIPT_URL from config.js
    * - Add cache buster to avoid old response caching
@@ -17,7 +17,7 @@ async function callAppsScript(action, data = null) {
     throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  const cacheBust = "_ts=" + Date.now() + "&_v=V5.22";
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.23";
   const parseResponse = async (res) => {
     const text = await res.text();
     try { return JSON.parse(text); }
@@ -34,15 +34,15 @@ async function callAppsScript(action, data = null) {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data, _v: "V5.22", _ts: Date.now() })
+    body: JSON.stringify({ action, data, _v: "V5.23", _ts: Date.now() })
   });
   return await parseResponse(res);
 }
 
-/* removedSaveSample removed in FINAL V5.22: all data comes from Google Sheet. */
+/* removedSaveSample removed in FINAL V5.23: all data comes from Google Sheet. */
 
 
-/* removedDashboardSample removed in FINAL V5.22: all data comes from Google Sheet. */
+/* removedDashboardSample removed in FINAL V5.23: all data comes from Google Sheet. */
 
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -283,7 +283,7 @@ function defaultSettings() {
 }
 
 function getSettings() {
-  // FINAL V5.22: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  // FINAL V5.23: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
   return defaultSettings();
 }
 
@@ -305,10 +305,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.22_CACHE_KPI_ADMIN_ONLY")) {
+    if (String(v).includes("V5.23_KPI_LABEL_EMAIL_PDF")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.22\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.23\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -321,6 +321,67 @@ function toggleSettingSection(btn) {
   const section = btn.closest(".setting-section");
   if (section) section.classList.toggle("open");
 }
+
+
+function isUnknownActionMessage(msg) {
+  return /Unknown action/i.test(String(msg || ""));
+}
+
+async function loadSettingsBundleCompat() {
+  /*
+   * FINAL V5.23.1
+   * Try fast bundle first. If backend is older and does not know getSettingsBundle,
+   * fall back to individual Sheet actions without showing error to the user.
+   */
+  try {
+    const bundle = await callAppsScript("getSettingsBundle", {});
+    if (bundle && bundle.success) return bundle;
+    if (bundle && isUnknownActionMessage(bundle.error || bundle.message)) {
+      throw new Error(bundle.error || bundle.message || "Backend ยังไม่มี getSettingsBundle แต่ระบบจะ fallback ไปโหลดทีละส่วนให้อัตโนมัติ");
+    }
+    // If bundle returns other errors, still try individual calls before failing.
+  } catch (e) {
+    if (!isUnknownActionMessage(e.message)) {
+      console.warn("getSettingsBundle failed, fallback to individual actions:", e);
+    }
+  }
+
+  const results = await Promise.allSettled([
+    callAppsScript("getSettings", {}),
+    callAppsScript("getUserLoginSettings", {}),
+    callAppsScript("getDepartmentSettings", {}),
+    callAppsScript("getEquipmentList", {})
+  ]);
+
+  const getVal = (idx, fallback) => {
+    const r = results[idx];
+    return r && r.status === "fulfilled" ? r.value : fallback;
+  };
+
+  const settings = getVal(0, { success: false, error: results[0] && results[0].reason ? results[0].reason.message : "getSettings failed" });
+  const userLogin = getVal(1, { success: false, error: results[1] && results[1].reason ? results[1].reason.message : "getUserLoginSettings failed" });
+  const departmentSettings = getVal(2, { success: false, error: results[2] && results[2].reason ? results[2].reason.message : "getDepartmentSettings failed" });
+  let equipment = getVal(3, { success: false, equipmentList: [] });
+
+  // Some deployed backends may not have getEquipmentList yet. Use departmentSettings.equipmentList instead.
+  if (!equipment || !equipment.success) {
+    equipment = {
+      success: true,
+      equipmentList: (departmentSettings && departmentSettings.equipmentList) || []
+    };
+  }
+
+  return {
+    success: true,
+    settings,
+    userLogin,
+    departmentSettings,
+    equipment,
+    fallbackMode: true,
+    version: "V5.23.1_FRONT_FALLBACK"
+  };
+}
+
 
 async function loadSettingsForm(forceRefresh = false) {
   const cfg = window.DAILY_CHECK_CONFIG || {};
@@ -348,15 +409,22 @@ async function loadSettingsForm(forceRefresh = false) {
   if (deptBox) deptBox.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด DepartmentSetting จาก Sheet...</div>`;
 
   try {
-    const bundle = await callAppsScript("getSettingsBundle", {});
+    const bundle = await loadSettingsBundleCompat();
     if (bundle && bundle.success) {
       writeSettingsBundleCache(bundle);
       applySettingsBundleToUi(bundle);
+
+      if (bundle.userLogin && !bundle.userLogin.success) {
+        renderUserLoginLoadError(bundle.userLogin.error || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
+      }
+      if (bundle.departmentSettings && !bundle.departmentSettings.success) {
+        renderDepartmentSettingLoadError(bundle.departmentSettings.error || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
+      }
     } else {
       throw new Error((bundle && bundle.error) || "โหลด Setting Bundle ไม่สำเร็จ");
     }
   } catch (e) {
-    console.warn("loadSettingsForm bundle failed", e);
+    console.warn("loadSettingsForm compat failed", e);
     // If cache exists, keep showing cached data, don't clear user UI.
     if (cached) {
       applySettingsBundleToUi(cached);
@@ -371,7 +439,7 @@ async function loadSettingsForm(forceRefresh = false) {
 
 
 // ============================================================
-// SETTINGS CACHE (FINAL V5.22)
+// SETTINGS CACHE (FINAL V5.23)
 // Keep latest Sheet settings in localStorage to avoid slow reload every time.
 // This cache does NOT store or override Apps Script URL.
 // ============================================================
@@ -472,7 +540,7 @@ function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.22 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.23 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -999,7 +1067,7 @@ function setupLogin() {
   }
 }
 
-/* fallbackLoginUser removed in FINAL V5.22: all data comes from Google Sheet. */
+/* fallbackLoginUser removed in FINAL V5.23: all data comes from Google Sheet. */
 
 
 async function submitLoginCode() {
@@ -1966,7 +2034,7 @@ function renderDepartmentKpiDashboard() {
     const equipNames = getAllKpiEquipments(targetGroup, actualByEquip);
 
     items = equipNames.map(eq => ({
-      name: equipmentShort(eq),
+      name: eq,
       fullName: eq,
       target: Number(equipTargets[eq] || 0),
       actual: Number(actualByEquip[eq] || 0)
