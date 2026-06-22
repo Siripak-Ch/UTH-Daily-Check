@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Check รพ.อุทัยธานี</title>
-  <link rel="icon" type="image/png" href="logo-uth.png">
+  <link rel="icon" type="image/png" href="./logo-uth.png?v=5.24">
+  <link rel="shortcut icon" type="image/png" href="./logo-uth.png?v=5.24">
+  <link rel="apple-touch-icon" href="./logo-uth.png?v=5.24">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -723,15 +725,15 @@
             <div id="clock-time" class="text-uth-200"></div>
           </div>
           <button onclick="switchTab('form')" id="tab-form-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all bg-white/20 text-white flex items-center gap-2"><i data-lucide="clipboard-edit" class="w-4 h-4"></i> บันทึกการตรวจสอบประจำวัน</button>
-          <button onclick="switchTab('dashboard')" id="tab-dash-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard / Export</button>
-          <button onclick="switchTab('settings')" id="tab-settings-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> Setting</button>
+          <button onclick="switchTab('dashboard')" id="tab-dash-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> สรุปข้อมูล / ส่งออก</button>
+          <button onclick="switchTab('settings')" id="tab-settings-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> ตั้งค่า</button>
           <button onclick="logoutDailyCheck()" id="logout-btn" class="px-3 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all hover:bg-white/10 text-uth-100 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
         </div>
       </div>
       <div class="flex sm:hidden border-t border-uth-500/50">
         <button onclick="switchTab('form')" id="tab-form-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-white text-white">บันทึกการตรวจ</button>
-        <button onclick="switchTab('dashboard')" id="tab-dash-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">Dashboard</button>
-        <button onclick="switchTab('settings')" id="tab-settings-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">Setting</button>
+        <button onclick="switchTab('dashboard')" id="tab-dash-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">สรุปข้อมูล</button>
+        <button onclick="switchTab('settings')" id="tab-settings-btn-mob" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-uth-200">ตั้งค่า</button>
       </div>
     </div>
   </header>
@@ -744,6 +746,9 @@
         <div class="flex items-center gap-2 mb-6 text-uth-800 border-b border-slate-100 pb-4">
           <i data-lucide="file-check-2" class="w-6 h-6"></i>
           <h2 class="text-xl font-bold">บันทึกการตรวจสอบประจำวัน</h2>
+          <button type="button" onclick="showUsageInfo()" title="วิธีใช้งานเบื้องต้น" class="ml-auto w-8 h-8 rounded-full bg-uth-50 text-uth-700 border border-uth-200 hover:bg-uth-100 flex items-center justify-center">
+            <i data-lucide="info" class="w-4 h-4"></i>
+          </button>
         </div>
 
         <form id="daily-form" class="space-y-6">
@@ -759,20 +764,20 @@
             </div>
           </div>
 
-          <!-- Row 2: SN / ID CODE / Asset number -->
+          <!-- Row 2: ID CODE / SN / Asset number -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div class="space-y-2 min-w-0">
               <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="hash" class="w-4 h-4 text-uth-600"></i> รหัสเครื่อง / SN
+                <i data-lucide="barcode" class="w-4 h-4 text-uth-600"></i> ID CODE <span class="text-red-500">*</span>
               </label>
-              <input type="text" id="idCode" placeholder="Serial number / SN" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
+              <input type="text" id="idCode" placeholder="ID CODE" required class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
             </div>
 
             <div class="space-y-2 min-w-0">
               <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="barcode" class="w-4 h-4 text-uth-600"></i> ID CODE <span class="text-xs text-slate-400 font-medium">(ไม่บังคับ)</span>
+                <i data-lucide="hash" class="w-4 h-4 text-uth-600"></i> รหัสเครื่อง / SN <span class="text-xs text-slate-400 font-medium">(ไม่บังคับ)</span>
               </label>
-              <input type="text" id="deviceIdCode" placeholder="ID CODE" class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
+              <input type="text" id="deviceIdCode" placeholder="Serial number / SN" class="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-uth-500 outline-none uppercase shadow-sm">
             </div>
 
             <div class="space-y-2 min-w-0">
@@ -881,12 +886,12 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
         <div>
           <h2 class="text-2xl font-bold text-slate-800">สรุปข้อมูล Daily Check เครื่องมือแพทย์ทั้งหมด</h2>
-          <p class="text-sm text-slate-500">กรองข้อมูล / ดูสัดส่วนประเภทเครื่องมือ / Preview และ Export PDF รายวัน</p>
+          <p class="text-sm text-slate-500">กรองข้อมูล / ดูสัดส่วนประเภทเครื่องมือ / Preview และ ส่งออก PDF รายวัน</p>
         </div>
         <div class="flex flex-wrap gap-2 self-end sm:self-auto justify-end">
-          <button onclick="openMonthlySummary()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> รายเดือน</button>
-          <button onclick="openPdfPreview()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i> Export PDF</button>
-          <button onclick="exportAllExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel</button>
+          <button onclick="openMonthlySummary()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> รายงานรายเดือน</button>
+          <button onclick="openPdfPreview()" class="px-3 py-2 bg-uth-700 hover:bg-uth-800 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i> ส่งออก PDF</button>
+          <button onclick="exportAllExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> ส่งออก Excel</button>
           <button onclick="downloadTemplate()" class="px-3 py-2 bg-white hover:bg-slate-50 text-uth-700 border border-uth-200 rounded-xl shadow-sm font-bold text-sm flex items-center gap-2"><i data-lucide="table" class="w-4 h-4"></i> Template Excel</button>
           <button onclick="loadDashboardData()" class="p-2.5 bg-white rounded-full shadow hover:bg-slate-50 text-uth-600 transition-all" title="รีเฟรช"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
         </div>
@@ -999,8 +1004,8 @@
                 <th onclick="sortTable('timestamp')" class="sortable-th px-3 py-2 font-semibold select-none border-r">วันที่เวลา <span id="sort-timestamp" class="sort-icon">▼</span></th>
                 <th onclick="sortTable('dept')" class="sortable-th px-3 py-2 font-semibold select-none border-r">แผนก</th>
                 <th onclick="sortTable('equip')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ประเภทเครื่องมือ</th>
-                <th onclick="sortTable('sn')" class="sortable-th px-3 py-2 font-semibold select-none border-r">รหัสเครื่อง / SN</th>
-                <th onclick="sortTable('deviceIdCode')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ID CODE</th>
+                <th onclick="sortTable('sn')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ID CODE</th>
+                <th onclick="sortTable('deviceIdCode')" class="sortable-th px-3 py-2 font-semibold select-none border-r">รหัสเครื่อง / SN</th>
                 <th onclick="sortTable('assetNo')" class="sortable-th px-3 py-2 font-semibold select-none border-r">หมายเลขครุภัณฑ์</th>
                 <th onclick="sortTable('status')" class="sortable-th px-3 py-2 font-semibold select-none text-center border-r">สถานะ</th>
                 <th onclick="sortTable('inspector')" class="sortable-th px-3 py-2 font-semibold select-none border-r">ผู้ตรวจสอบ</th>
@@ -1026,7 +1031,7 @@
     <main id="settings-page" class="flex-1 page-hidden w-full max-w-5xl mx-auto">
       <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden settings-card">
         <div class="bg-gradient-to-r from-uth-800 to-uth-600 p-5 text-white">
-          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5"></i> Setting ระบบ Daily Check</h2>
+          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5"></i> ตั้งค่าระบบ Daily Check</h2>
           <p class="text-xs text-uth-100 mt-1">แก้ไขการเชื่อมต่อ / ผู้ดูแลระบบ / Login code</p>
         </div>
 
@@ -1064,20 +1069,20 @@
           <!-- Setting Section: UserLogin -->
           <div class="setting-section open">
             <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
-              <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> User Login Mapping</span>
+              <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> แผนกและรหัสเข้าใช้งาน</span>
               <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
             </button>
             <div class="setting-section-body">
               <div class="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <div class="text-sm font-black text-blue-800">User Login Mapping</div>
+                    <div class="text-sm font-black text-blue-800">แผนกและรหัสเข้าใช้งาน</div>
                     <p class="text-xs text-blue-700 mt-1">แสดง/แก้ไขข้อมูลจาก Google Sheet ชื่อ <b>UserLogin</b> ได้จากหน้านี้ และเพิ่ม Department Code ใหม่ได้</p>
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <button type="button" onclick="addUserLoginRow()" class="px-3 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม User/แผนก</button>
-                    <button type="button" onclick="saveUserLoginSettingsOnly()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก UserLogin</button>
-                    <button type="button" onclick="loadUserLoginSettings(true)" class="px-3 py-2 rounded-xl bg-white border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-50 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลด UserLogin</button>
+                    <button type="button" onclick="addUserLoginRow()" class="px-3 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มผู้ใช้งาน/แผนก</button>
+                    <button type="button" onclick="saveUserLoginSettingsOnly()" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกรหัสเข้าใช้งาน</button>
+                    <button type="button" onclick="loadUserLoginSettings(true)" class="px-3 py-2 rounded-xl bg-white border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-50 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลดรหัสเข้าใช้งาน</button>
                   </div>
                 </div>
                 <div id="setting-userlogin-editor" class="overflow-x-auto rounded-2xl border border-blue-100 bg-white"></div>
@@ -1089,14 +1094,14 @@
           <!-- Setting Section: Department KPI -->
           <div class="setting-section open">
             <button type="button" class="setting-section-head" onclick="toggleSettingSection(this)">
-              <span class="flex items-center gap-2"><i data-lucide="target" class="w-4 h-4"></i> Daily Summary Email / KPI Target แต่ละแผนก</span>
+              <span class="flex items-center gap-2"><i data-lucide="target" class="w-4 h-4"></i> อีเมลสรุปรายวัน / เป้าหมาย KPI แต่ละแผนก</span>
               <i data-lucide="chevron-down" class="setting-section-arrow w-5 h-5"></i>
             </button>
             <div class="setting-section-body">
               <div class="space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                   <div>
-                    <label class="text-sm font-bold text-slate-700">Daily Summary Email / KPI Target แต่ละแผนก</label>
+                    <label class="text-sm font-bold text-slate-700">อีเมลสรุปรายวัน / เป้าหมาย KPI แต่ละแผนก</label>
                     <p class="text-xs text-slate-500 mt-1">กดชื่อแผนกเพื่อเปิดรายละเอียด: Department Email + จำนวนเครื่องมือ Target แยกตามประเภทเครื่องมือ</p>
                   </div>
                   <div class="flex flex-wrap gap-2">
@@ -1107,7 +1112,7 @@
                       <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึก KPI
                     </button>
                     <button type="button" onclick="loadDepartmentSummarySettings(true)" class="px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 flex items-center gap-1">
-                      <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลดจาก Sheet
+                      <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> โหลดจากชีต
                     </button>
                   </div>
                 </div>
@@ -1126,16 +1131,37 @@
             </button>
             <div class="setting-section-body">
               <div class="flex flex-col sm:flex-row flex-wrap gap-3">
-                <button onclick="saveSettings()" class="px-5 py-3 bg-uth-700 hover:bg-uth-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> บันทึก Setting</button>
+                <button onclick="saveSettings()" class="px-5 py-3 bg-uth-700 hover:bg-uth-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> บันทึก ตั้งค่า</button>
                 <button onclick="createDailySummaryTrigger()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="bell" class="w-4 h-4"></i> ตั้งแจ้งเตือนรายวัน</button>
                 <button onclick="testDailySummaryEmail()" class="px-5 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> ทดสอบส่งสรุป</button>
-                <button onclick="checkBackendVersionNow()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i> ตรวจ Backend</button>
               </div>
             </div>
           </div>
         </div>
       </div>
     </main>
+
+
+
+    <!-- USAGE INFO MODAL -->
+    <div id="usage-info-modal" class="fixed inset-0 bg-black/50 z-[120] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-uth-700 text-white px-5 py-4 flex items-center justify-between">
+          <h3 class="font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> วิธีใช้งานเบื้องต้น</h3>
+          <button onclick="closeUsageInfo()" class="p-1 rounded-xl hover:bg-white/15"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-3 text-sm text-slate-700 leading-relaxed">
+          <div><b>1.</b> Login ด้วย Department Code ของแผนก</div>
+          <div><b>2.</b> เลือกแผนกและประเภทเครื่องมือ</div>
+          <div><b>3.</b> กรอก <b>ID CODE</b> เป็นข้อมูลบังคับ ส่วน SN และหมายเลขครุภัณฑ์ไม่บังคับ</div>
+          <div><b>4.</b> ตรวจ Checklist เลือก PASS/FAIL และแนบรูปภาพ</div>
+          <div><b>5.</b> กดบันทึก ระบบจะส่งข้อมูลเข้า Google Sheet และแสดงใน Dashboard</div>
+        </div>
+        <div class="px-5 pb-5">
+          <button onclick="closeUsageInfo()" class="w-full bg-uth-700 hover:bg-uth-800 text-white font-bold py-3 rounded-2xl">เข้าใจแล้ว</button>
+        </div>
+      </div>
+    </div>
 
 
     <!-- DETAIL MODAL -->
@@ -1154,8 +1180,8 @@
           </div>
           <div class="grid grid-cols-2 gap-y-3 text-sm pb-4 border-b border-slate-100">
             <div class="text-slate-500">วันที่-เวลาตรวจ:</div><div id="md-time" class="font-medium text-slate-800 text-right"></div>
-            <div class="text-slate-500">รหัสเครื่อง / SN:</div><div id="md-sn" class="font-bold text-uth-700 text-right"></div>
-            <div class="text-slate-500">ID CODE:</div><div id="md-device-id" class="font-medium text-slate-800 text-right"></div>
+            <div class="text-slate-500">ID CODE:</div><div id="md-sn" class="font-bold text-uth-700 text-right"></div>
+            <div class="text-slate-500">รหัสเครื่อง / SN:</div><div id="md-device-id" class="font-medium text-slate-800 text-right"></div>
             <div class="text-slate-500">หมายเลขครุภัณฑ์:</div><div id="md-asset-no" class="font-medium text-slate-800 text-right"></div>
             <div class="text-slate-500">ประเภทเครื่องมือ:</div><div id="md-equip" class="font-medium text-slate-800 text-right leading-tight"></div>
             <div class="text-slate-500">แผนกประจำเครื่อง:</div><div id="md-dept" class="font-medium text-slate-800 text-right"></div>
@@ -1186,7 +1212,7 @@
             <p class="text-xs text-uth-100">ตรวจสอบรูปแบบก่อนดาวน์โหลด</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="downloadPdf()" id="btn-download-pdf" class="px-4 py-2 bg-white text-uth-700 rounded-xl text-sm font-bold hover:bg-uth-50 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Download PDF</button>
+            <button onclick="downloadPdf()" id="btn-download-pdf" class="px-4 py-2 bg-white text-uth-700 rounded-xl text-sm font-bold hover:bg-uth-50 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> ดาวน์โหลด PDF</button>
             <button onclick="closePdfPreview()" class="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 flex items-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> ปิด</button>
           </div>
         </div>
@@ -1198,8 +1224,8 @@
 
   </div>
 
-  <script src="config.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
-  <script src="script.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
-  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-23-KPI-LABEL-EMAIL-PDF"></script>
+  <script src="config.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
+  <script src="script.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
+  <script src="UTH_Daily_Check_frontend_FINAL.js?v=FINAL-V5-24-IDCODE-THAI-UI-INFO"></script>
 </body>
 </html>

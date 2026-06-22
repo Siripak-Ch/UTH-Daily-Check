@@ -1,3 +1,5 @@
+const FRONTEND_VERSION = "V5.24_IDCODE_THAI_UI_INFO";
+
 /*
 Daily Check Frontend V2
 - GitHub Pages frontend
@@ -7,7 +9,7 @@ Daily Check Frontend V2
 
 async function callAppsScript(action, data = null) {
   /*
-   * FINAL V5.23
+   * FINAL V5.24
    * - No local-sample data
    * - Always use current APPS_SCRIPT_URL from config.js
    * - Add cache buster to avoid old response caching
@@ -17,14 +19,14 @@ async function callAppsScript(action, data = null) {
     throw new Error("ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ใน config.js");
   }
 
-  const cacheBust = "_ts=" + Date.now() + "&_v=V5.23";
+  const cacheBust = "_ts=" + Date.now() + "&_v=V5.24";
   const parseResponse = async (res) => {
     const text = await res.text();
     try { return JSON.parse(text); }
     catch (e) { throw new Error("Apps Script response ไม่ใช่ JSON: " + text.slice(0, 250)); }
   };
 
-  if (["dashboard","getSettings","getSettingsBundle","getUserLoginSettings","getDepartmentSettings","getEquipmentList","getVersion","checkRootFolder"].includes(action)) {
+  if (["dashboard","getSettings","getSettingsBundle","getรหัสเข้าใช้งานSettings","getDepartmentSettings","getEquipmentList","getVersion","checkRootFolder"].includes(action)) {
     const url = appsScriptUrl + (appsScriptUrl.includes("?") ? "&" : "?") + "action=" + encodeURIComponent(action) + "&" + cacheBust;
     const res = await fetch(url, { method: "GET", cache: "no-store" });
     return await parseResponse(res);
@@ -34,15 +36,15 @@ async function callAppsScript(action, data = null) {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, data, _v: "V5.23", _ts: Date.now() })
+    body: JSON.stringify({ action, data, _v: "V5.24", _ts: Date.now() })
   });
   return await parseResponse(res);
 }
 
-/* removedSaveSample removed in FINAL V5.23: all data comes from Google Sheet. */
+/* removedSaveSample removed in FINAL V5.24: all data comes from Google Sheet. */
 
 
-/* removedDashboardSample removed in FINAL V5.23: all data comes from Google Sheet. */
+/* removedสรุปข้อมูลSample removed in FINAL V5.24: all data comes from Google Sheet. */
 
 
 const THAI_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -52,7 +54,7 @@ const DEPARTMENTS = [
   "ER(อุบัติเหตุฉุกเฉิน)", "หน่วยไตเทียมเฉลิมพระเกียรติ", "งานห้องผ่าตัด", "งานห้องผ่าตัดเล็ก",
   "LR(งานห้องคลอด)", "สูติ-นรีเวช", "ทันตกรรม", "กุมารเวชกรรม1", "กุมารเวชกรรม 2",
   "ศัลยกรรมชาย", "ศัลยกรรมหญิง", "ศัลยกรรมกระดูก", "ตึกตา", "หู คอ จมูก", "แพทย์แผนไทย",
-  "OPD", "จิตเวช", "กายภาพ", "รังสีวิทยา", "ตึกพิเศษควรอยู่", "ตึกสงฆ์ 50ปี ชั้น 1", "อื่นๆ"
+  "OPD", "จิตเวช", "กายภาพ", "รังสีวิทยา", "ตึกพิเศษควรอยู่", "ตึกสงฆ์ 50ปี ชั้น 1", "ศูนย์เครื่องมือแพทย์", "อื่นๆ"
 ];
 
 const EQUIPMENTS = [
@@ -250,7 +252,7 @@ let imageType = null;
 let globalRawData = [];
 let globalDeptSettings = [];
 let globalEquipmentList = [];
-let globalUserLoginRows = [];
+let globalรหัสเข้าใช้งานRows = [];
 let currentDisplayedData = [];
 let chartInstance = null;
 let currentSortCol = "timestamp";
@@ -283,7 +285,7 @@ function defaultSettings() {
 }
 
 function getSettings() {
-  // FINAL V5.23: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
+  // FINAL V5.24: ไม่อ่านค่า Setting จาก localStorage เพื่อไม่ให้จำ Apps Script URL เก่า
   return defaultSettings();
 }
 
@@ -305,10 +307,10 @@ async function checkBackendVersionNow() {
   try {
     const res = await callAppsScript("getVersion", {});
     const v = (res && (res.version || res.APP_VERSION || res.message)) || "";
-    if (String(v).includes("V5.23_KPI_LABEL_EMAIL_PDF")) {
+    if (String(v).includes("V5.24_IDCODE_THAI_UI_INFO")) {
       alert("Backend OK: " + v);
     } else {
-      alert("Backend ยังไม่ใช่ V5.23\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
+      alert("Backend ยังไม่ใช่ V5.24\\nVersion ที่เจอ: " + (v || JSON.stringify(res)) + "\\n\\nให้ Deploy Apps Script ใหม่แบบ New version แล้ว Ctrl+F5");
     }
   } catch (e) {
     alert("ตรวจ Backend ไม่สำเร็จ: " + e.message);
@@ -329,7 +331,7 @@ function isUnknownActionMessage(msg) {
 
 async function loadSettingsBundleCompat() {
   /*
-   * FINAL V5.23.1
+   * FINAL V5.24.1
    * Try fast bundle first. If backend is older and does not know getSettingsBundle,
    * fall back to individual Sheet actions without showing error to the user.
    */
@@ -348,7 +350,7 @@ async function loadSettingsBundleCompat() {
 
   const results = await Promise.allSettled([
     callAppsScript("getSettings", {}),
-    callAppsScript("getUserLoginSettings", {}),
+    callAppsScript("getรหัสเข้าใช้งานSettings", {}),
     callAppsScript("getDepartmentSettings", {}),
     callAppsScript("getEquipmentList", {})
   ]);
@@ -359,7 +361,7 @@ async function loadSettingsBundleCompat() {
   };
 
   const settings = getVal(0, { success: false, error: results[0] && results[0].reason ? results[0].reason.message : "getSettings failed" });
-  const userLogin = getVal(1, { success: false, error: results[1] && results[1].reason ? results[1].reason.message : "getUserLoginSettings failed" });
+  const userLogin = getVal(1, { success: false, error: results[1] && results[1].reason ? results[1].reason.message : "getรหัสเข้าใช้งานSettings failed" });
   const departmentSettings = getVal(2, { success: false, error: results[2] && results[2].reason ? results[2].reason.message : "getDepartmentSettings failed" });
   let equipment = getVal(3, { success: false, equipmentList: [] });
 
@@ -378,7 +380,7 @@ async function loadSettingsBundleCompat() {
     departmentSettings,
     equipment,
     fallbackMode: true,
-    version: "V5.23.1_FRONT_FALLBACK"
+    version: "V5.24.1_FRONT_FALLBACK"
   };
 }
 
@@ -396,40 +398,50 @@ async function loadSettingsForm(forceRefresh = false) {
     if (el && !el.value) el.value = val || "";
   });
 
-  // Use latest cached setting first, so page opens fast and does not reload every time.
   const cached = readSettingsBundleCache();
-  if (!forceRefresh && cached) {
-    applySettingsBundleToUi(cached);
-    return;
-  }
+  if (!forceRefresh && cached) applySettingsBundleToUi(cached);
 
   const userBox = document.getElementById("setting-userlogin-editor");
   const deptBox = document.getElementById("setting-dept-summary-cards");
-  if (userBox) userBox.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
-  if (deptBox) deptBox.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด DepartmentSetting จาก Sheet...</div>`;
+  if (forceRefresh || !cached) {
+    if (userBox) userBox.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลดรหัสเข้าใช้งานจากชีต...</div>`;
+    if (deptBox) deptBox.innerHTML = `<div class="text-sm text-slate-500 p-4 rounded-2xl bg-slate-50 border border-slate-200">กำลังโหลด KPI จากชีต...</div>`;
+  }
 
   try {
-    const bundle = await loadSettingsBundleCompat();
-    if (bundle && bundle.success) {
-      writeSettingsBundleCache(bundle);
-      applySettingsBundleToUi(bundle);
+    const results = await Promise.allSettled([
+      callAppsScript("getSettings", {}),
+      callAppsScript("getรหัสเข้าใช้งานSettings", {}),
+      callAppsScript("getDepartmentSettings", {}),
+      callAppsScript("getEquipmentList", {})
+    ]);
 
-      if (bundle.userLogin && !bundle.userLogin.success) {
-        renderUserLoginLoadError(bundle.userLogin.error || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
-      }
-      if (bundle.departmentSettings && !bundle.departmentSettings.success) {
-        renderDepartmentSettingLoadError(bundle.departmentSettings.error || "โหลด DepartmentSetting จาก Sheet ไม่สำเร็จ");
-      }
-    } else {
-      throw new Error((bundle && bundle.error) || "โหลด Setting Bundle ไม่สำเร็จ");
+    const getVal = (idx, fallback) => {
+      const r = results[idx];
+      return r && r.status === "fulfilled" ? r.value : fallback;
+    };
+
+    const bundle = {
+      success: true,
+      settings: getVal(0, { success: false, error: "โหลด Setting ไม่สำเร็จ" }),
+      userLogin: getVal(1, { success: false, error: "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ" }),
+      departmentSettings: getVal(2, { success: false, error: "โหลด KPI จากชีตไม่สำเร็จ" }),
+      equipment: getVal(3, { success: true, equipmentList: [] }),
+      version: "V5.24_FRONT_DIRECT_LOAD"
+    };
+    if (!bundle.equipment || !bundle.equipment.success) {
+      bundle.equipment = { success: true, equipmentList: (bundle.departmentSettings && bundle.departmentSettings.equipmentList) || [] };
     }
+
+    writeSettingsBundleCache(bundle);
+    applySettingsBundleToUi(bundle);
+
+    if (bundle.userLogin && !bundle.userLogin.success) renderรหัสเข้าใช้งานLoadError(bundle.userLogin.error || "โหลดรหัสเข้าใช้งานจากชีตไม่สำเร็จ");
+    if (bundle.departmentSettings && !bundle.departmentSettings.success) renderDepartmentSettingLoadError(bundle.departmentSettings.error || "โหลด KPI จากชีตไม่สำเร็จ");
   } catch (e) {
-    console.warn("loadSettingsForm compat failed", e);
-    // If cache exists, keep showing cached data, don't clear user UI.
-    if (cached) {
-      applySettingsBundleToUi(cached);
-    } else {
-      renderUserLoginLoadError(e.message);
+    console.warn("loadSettingsForm direct sheet load failed", e);
+    if (!cached) {
+      renderรหัสเข้าใช้งานLoadError(e.message);
       renderDepartmentSettingLoadError(e.message);
     }
   }
@@ -439,7 +451,7 @@ async function loadSettingsForm(forceRefresh = false) {
 
 
 // ============================================================
-// SETTINGS CACHE (FINAL V5.23)
+// SETTINGS CACHE (FINAL V5.24)
 // Keep latest Sheet settings in localStorage to avoid slow reload every time.
 // This cache does NOT store or override Apps Script URL.
 // ============================================================
@@ -498,8 +510,8 @@ function applySettingsBundleToUi(bundle) {
 
   const userRes = bundle.userLogin || {};
   if (userRes.success) {
-    globalUserLoginRows = userRes.users || [];
-    renderUserLoginEditor(globalUserLoginRows);
+    globalรหัสเข้าใช้งานRows = userRes.users || [];
+    renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
   }
 
   const deptRes = bundle.departmentSettings || {};
@@ -524,7 +536,7 @@ function buildCurrentSettingsBundleFromUi() {
       rootFolderId: (document.getElementById("setting-root-folder") || {}).value || "",
       summaryTime: (document.getElementById("setting-summary-time") || {}).value || "17:00"
     },
-    userLogin: { success: true, users: globalUserLoginRows || [] },
+    userLogin: { success: true, users: globalรหัสเข้าใช้งานRows || [] },
     departmentSettings: { success: true, settings: globalDeptSettings || [], equipmentList: globalEquipmentList || [] },
     equipment: { success: true, equipmentList: globalEquipmentList || [] }
   };
@@ -533,14 +545,14 @@ function buildCurrentSettingsBundleFromUi() {
 
 function isUnknownActionError(resOrErr) {
   const msg = String((resOrErr && resOrErr.error) || (resOrErr && resOrErr.message) || resOrErr || "");
-  return /Unknown action|saveUserLoginSettings|saveDepartmentSettings/i.test(msg);
+  return /Unknown action|saveรหัสเข้าใช้งานSettings|saveDepartmentSettings/i.test(msg);
 }
 
 function showBackendOldVersionAlert(actionName) {
   alert(
     "Apps Script Backend ยังเป็นเวอร์ชันเก่า จึงไม่รู้จัก action: " + actionName + "\\n\\n" +
     "วิธีแก้:\\n" +
-    "1) เอา Code.js จาก ZIP V5.23 ไปแทนใน Apps Script\\n" +
+    "1) เอา Code.js จาก ZIP V5.24 ไปแทนใน Apps Script\\n" +
     "2) Save\\n" +
     "3) Run function: setupEditableSheetsNow\\n" +
     "4) Deploy > Manage deployments > Edit > New version > Deploy\\n" +
@@ -551,43 +563,43 @@ function showBackendOldVersionAlert(actionName) {
 // ============================================================
 // USER LOGIN INLINE EDITOR
 // ============================================================
-async function loadUserLoginSettings(forceRefresh = false) {
+async function loadรหัสเข้าใช้งานSettings(forceRefresh = false) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
 
   const cached = readSettingsBundleCache();
   if (!forceRefresh && cached && cached.userLogin && cached.userLogin.success) {
-    globalUserLoginRows = cached.userLogin.users || [];
-    renderUserLoginEditor(globalUserLoginRows);
+    globalรหัสเข้าใช้งานRows = cached.userLogin.users || [];
+    renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
     return;
   }
 
-  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด UserLogin จาก Sheet...</div>`;
+  box.innerHTML = `<div class="p-3 text-xs text-slate-500">กำลังโหลด รหัสเข้าใช้งาน จาก Sheet...</div>`;
   try {
-    const res = await callAppsScript("getUserLoginSettings", {});
+    const res = await callAppsScript("getรหัสเข้าใช้งานSettings", {});
     if (res && res.success) {
-      globalUserLoginRows = res.users || [];
+      globalรหัสเข้าใช้งานRows = res.users || [];
       updateSettingsBundleCache({ userLogin: res });
-      renderUserLoginEditor(globalUserLoginRows);
+      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
     } else {
-      renderUserLoginLoadError((res && res.error) || "โหลด UserLogin จาก Sheet ไม่สำเร็จ");
+      renderรหัสเข้าใช้งานLoadError((res && res.error) || "โหลด รหัสเข้าใช้งาน จาก Sheet ไม่สำเร็จ");
     }
   } catch (e) {
-    console.warn("loadUserLoginSettings failed", e);
+    console.warn("loadรหัสเข้าใช้งานSettings failed", e);
     if (cached && cached.userLogin && cached.userLogin.success) {
-      globalUserLoginRows = cached.userLogin.users || [];
-      renderUserLoginEditor(globalUserLoginRows);
+      globalรหัสเข้าใช้งานRows = cached.userLogin.users || [];
+      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
     } else {
-      renderUserLoginLoadError(e.message);
+      renderรหัสเข้าใช้งานLoadError(e.message);
     }
   }
 }
 
-function renderUserLoginLoadError(message) {
+function renderรหัสเข้าใช้งานLoadError(message) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
   box.innerHTML = `<div class="p-4 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl">
-    โหลด UserLogin จาก Google Sheet ไม่สำเร็จ<br>
+    โหลด รหัสเข้าใช้งาน จาก Google Sheet ไม่สำเร็จ<br>
     <span class="text-xs">${escapeHTML(message || "")}</span><br>
     <span class="text-xs">ระบบจะไม่ใช้ sample/fallback data — กรุณาตรวจ Apps Script และ Deploy version ล่าสุด</span>
   </div>`;
@@ -595,16 +607,16 @@ function renderUserLoginLoadError(message) {
 
 
 
-function renderUserLoginEditor(users = []) {
+function renderรหัสเข้าใช้งานEditor(users = []) {
   const box = document.getElementById("setting-userlogin-editor");
   if (!box) return;
   if (!users.length) {
-    box.innerHTML = `<div class="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลใน Sheet UserLogin — กดเพิ่ม User/แผนก เพื่อสร้างรายการใหม่</div>
+    box.innerHTML = `<div class="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลใน Sheet รหัสเข้าใช้งาน — กดเพิ่ม User/แผนก เพื่อสร้างรายการใหม่</div>
       <table class="userlogin-table"><tbody id="userlogin-tbody"></tbody></table>`;
     return;
   }
 
-  const rows = users.map(u => buildUserLoginRowHtml(u)).join("");
+  const rows = users.map(u => buildรหัสเข้าใช้งานRowHtml(u)).join("");
   box.innerHTML = `
     <table class="userlogin-table">
       <thead>
@@ -621,7 +633,7 @@ function renderUserLoginEditor(users = []) {
     </table>`;
 }
 
-function buildUserLoginRowHtml(u = {}) {
+function buildรหัสเข้าใช้งานRowHtml(u = {}) {
   const active = (u.active === false || String(u.active).toUpperCase() === "FALSE") ? "FALSE" : "TRUE";
   return `
     <tr>
@@ -641,25 +653,25 @@ function buildUserLoginRowHtml(u = {}) {
           <option value="FALSE" ${active === "FALSE" ? "selected" : ""}>FALSE</option>
         </select>
       </td>
-      <td><button type="button" onclick="removeUserLoginRow(this)" class="text-red-600 text-xs font-bold hover:underline">ลบ</button></td>
+      <td><button type="button" onclick="removeรหัสเข้าใช้งานRow(this)" class="text-red-600 text-xs font-bold hover:underline">ลบ</button></td>
     </tr>`;
 }
 
-function addUserLoginRow() {
+function addรหัสเข้าใช้งานRow() {
   const tbody = document.getElementById("userlogin-tbody");
   if (!tbody) {
-    renderUserLoginEditor([]);
+    renderรหัสเข้าใช้งานEditor([]);
     return;
   }
-  tbody.insertAdjacentHTML("beforeend", buildUserLoginRowHtml({ role: "user", active: true }));
+  tbody.insertAdjacentHTML("beforeend", buildรหัสเข้าใช้งานRowHtml({ role: "user", active: true }));
 }
 
-function removeUserLoginRow(btn) {
+function removeรหัสเข้าใช้งานRow(btn) {
   const tr = btn.closest("tr");
-  if (tr && confirm("ลบ User/Department Code นี้ใช่หรือไม่?")) tr.remove();
+  if (tr && confirm("ลบ User/รหัสแผนก นี้ใช่หรือไม่?")) tr.remove();
 }
 
-function getUserLoginRowsFromEditor() {
+function getรหัสเข้าใช้งานRowsFromEditor() {
   const tbody = document.getElementById("userlogin-tbody");
   if (!tbody) return [];
   return Array.from(tbody.querySelectorAll("tr")).map(tr => ({
@@ -671,25 +683,25 @@ function getUserLoginRowsFromEditor() {
   })).filter(u => u.code.trim() && u.department.trim());
 }
 
-async function saveUserLoginSettingsOnly() {
-  showLoading("กำลังบันทึก UserLogin...", "กำลังบันทึก Department Code Mapping");
+async function saveรหัสเข้าใช้งานSettingsOnly() {
+  showLoading("กำลังบันทึก รหัสเข้าใช้งาน...", "กำลังบันทึก รหัสแผนก Mapping");
   try {
-    const users = getUserLoginRowsFromEditor();
-    const res = await callAppsScript("saveUserLoginSettings", { users });
+    const users = getรหัสเข้าใช้งานRowsFromEditor();
+    const res = await callAppsScript("saveรหัสเข้าใช้งานSettings", { users });
     if (res && res.success) {
-      globalUserLoginRows = res.users || users;
+      globalรหัสเข้าใช้งานRows = res.users || users;
       updateSettingsBundleCache({ userLogin: res });
-      alert("บันทึก UserLogin สำเร็จ");
-      renderUserLoginEditor(globalUserLoginRows);
+      alert("บันทึก รหัสเข้าใช้งาน สำเร็จ");
+      renderรหัสเข้าใช้งานEditor(globalรหัสเข้าใช้งานRows);
       loadDepartmentSummarySettings();
     } else if (isUnknownActionError(res)) {
-      showBackendOldVersionAlert("saveUserLoginSettings");
+      showBackendOldVersionAlert("saveรหัสเข้าใช้งานSettings");
     } else {
-      alert("บันทึก UserLogin ไม่สำเร็จ: " + ((res && res.error) || "Unknown error"));
+      alert("บันทึก รหัสเข้าใช้งาน ไม่สำเร็จ: " + ((res && res.error) || "Unknown error"));
     }
   } catch (e) {
-    if (isUnknownActionError(e)) showBackendOldVersionAlert("saveUserLoginSettings");
-    else alert("บันทึก UserLogin ไม่สำเร็จ: " + e.message);
+    if (isUnknownActionError(e)) showBackendOldVersionAlert("saveรหัสเข้าใช้งานSettings");
+    else alert("บันทึก รหัสเข้าใช้งาน ไม่สำเร็จ: " + e.message);
   } finally {
     hideLoading(true);
   }
@@ -922,7 +934,7 @@ async function saveDepartmentSettingOnly() {
       updateSettingsBundleCache({ departmentSettings: res, equipment: { success: true, equipmentList: globalEquipmentList } });
       alert("บันทึก KPI / Department Email สำเร็จ");
       renderDepartmentSettingCards(res, "");
-      renderDepartmentKpiDashboard();
+      renderDepartmentKpiสรุปข้อมูล();
     } else if (isUnknownActionError(res)) {
       showBackendOldVersionAlert("saveDepartmentSettings");
     } else {
@@ -1039,7 +1051,7 @@ function isLoggedIn() {
 }
 
 function showRequestAccessInfo() {
-  alert("กรุณาติดต่อผู้ดูแลระบบ เพื่อขอ Department Code หรือเพิ่ม Code ใน Sheet: UserLogin");
+  alert("กรุณาติดต่อผู้ดูแลระบบ เพื่อขอ รหัสแผนก หรือเพิ่ม Code ใน Sheet: รหัสเข้าใช้งาน");
 }
 
 function setupLogin() {
@@ -1067,7 +1079,7 @@ function setupLogin() {
   }
 }
 
-/* fallbackLoginUser removed in FINAL V5.23: all data comes from Google Sheet. */
+/* fallbackLoginUser removed in FINAL V5.24: all data comes from Google Sheet. */
 
 
 async function submitLoginCode() {
@@ -1078,7 +1090,7 @@ async function submitLoginCode() {
 
   if (!code) {
     if (err) {
-      err.textContent = "กรุณากรอก Department Code";
+      err.textContent = "กรุณากรอกรหัสแผนก";
       err.classList.remove("hidden");
     }
     return;
@@ -1089,10 +1101,13 @@ async function submitLoginCode() {
     const res = await callAppsScript("loginUser", { code });
     if (res && res.success && res.user) user = res.user;
   } catch (e) {
-    console.warn("Backend login failed, using local fallback", e);
+    console.warn("Backend login failed", e);
+    if (err) {
+      err.textContent = "เชื่อมต่อชีต UserLogin ไม่สำเร็จ กรุณาตรวจ Apps Script / Deploy version ล่าสุด";
+      err.classList.remove("hidden");
+    }
+    return;
   }
-
-  if (!user) user = fallbackLoginUser(code);
 
   if (user) {
     if (remember && remember.checked) {
@@ -1107,7 +1122,7 @@ async function submitLoginCode() {
     setupLogin();
   } else {
     if (err) {
-      err.textContent = "Department Code ไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน";
+      err.textContent = "รหัสแผนกไม่ถูกต้อง หรือยังไม่ได้เปิดใช้งาน";
       err.classList.remove("hidden");
     }
   }
@@ -1347,22 +1362,56 @@ function switchTab(tabName) {
     document.getElementById("settings-page").classList.remove("page-hidden");
     if (btnSettings) { btnSettings.classList.add("bg-white/20", "text-white"); btnSettings.classList.remove("text-uth-100"); }
     if (btnSettingsMob) { btnSettingsMob.classList.add("border-white", "text-white"); btnSettingsMob.classList.remove("border-transparent"); }
-    loadSettingsForm();
+    loadSettingsForm(true);
   } else {
     document.getElementById("dashboard-page").classList.remove("page-hidden");
     if (btnDash) { btnDash.classList.add("bg-white/20", "text-white"); btnDash.classList.remove("text-uth-100"); }
     if (btnDashMob) { btnDashMob.classList.add("border-white", "text-white"); btnDashMob.classList.remove("border-transparent"); }
-    if (globalRawData.length === 0) loadDashboardData();
-    else resyncDashboardDataSilent();
+    if (globalRawData.length === 0) loadสรุปข้อมูลData();
+    else resyncสรุปข้อมูลDataSilent();
   }
   lucide.createIcons();
 }
 
+
+function showUsageInfo() {
+  const modal = document.getElementById("usage-info-modal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    lucide.createIcons();
+  } else {
+    alert("วิธีใช้งานเบื้องต้น\\n1) Login ด้วย รหัสแผนก\\n2) เลือกแผนก/เครื่องมือ\\n3) กรอก ID CODE\\n4) เลือก PASS/FAIL และแนบรูป\\n5) กดบันทึกข้อมูล");
+  }
+}
+
+function closeUsageInfo() {
+  const modal = document.getElementById("usage-info-modal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+}
+
+
 function setupBranding() {
   const cfg = window.DAILY_CHECK_CONFIG || {};
-  document.getElementById("app-logo").src = cfg.LOGO_URL || "";
+  const logo = cfg.LOGO_URL || "logo-uth.png";
+  document.getElementById("app-logo").src = logo;
   document.getElementById("app-hospital").innerText = cfg.HOSPITAL_NAME || "โรงพยาบาลอุทัยธานี";
   document.getElementById("app-system").innerText = cfg.SYSTEM_NAME || "ระบบ Daily Check เครื่องมือแพทย์";
+
+  // Fix browser tab logo / favicon cache
+  ["icon", "shortcut icon", "apple-touch-icon"].forEach(rel => {
+    let link = document.querySelector(`link[rel="${rel}"]`);
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = rel;
+      document.head.appendChild(link);
+    }
+    link.href = "./" + String(logo).replace("./", "") + "?v=5.24";
+    if (rel !== "apple-touch-icon") link.type = "image/png";
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1385,7 +1434,7 @@ document.addEventListener("DOMContentLoaded", () => {
   logPageVisit();
 
   // Auto resync dashboard every 1 minute
-  startDashboardAutoResync();
+  startสรุปข้อมูลAutoResync();
   loadSettingsForm();
 });
 
@@ -1583,6 +1632,7 @@ function resetImage() {
 async function handleSubmit(e) {
   e.preventDefault();
   if (!document.getElementById("equipment").value) { alert("กรุณาเลือกประเภทเครื่องมือ"); return; }
+  if (!document.getElementById("idCode").value.trim()) { alert("กรุณากรอก ID CODE"); return; }
   if (base64Images.length === 0) { alert("กรุณาถ่ายรูปหรือแนบรูปภาพเครื่องมือก่อนบันทึก"); return; }
 
   let dept = document.getElementById("department").value;
@@ -1640,7 +1690,7 @@ async function handleSubmit(e) {
       const msg = [
         "พบข้อมูลซ้ำในระบบ",
         "",
-        "เงื่อนไขซ้ำ: วันที่ตรวจสอบ + รหัสเครื่อง/SN + ประเภทเครื่องมือ",
+        "เงื่อนไขซ้ำ: วันที่ตรวจสอบ + ID CODE + ประเภทเครื่องมือ",
         existing.timestamp ? ("เวลาที่เคยบันทึก: " + existing.timestamp) : "",
         existing.dept ? ("แผนก: " + existing.dept) : "",
         "",
@@ -1710,7 +1760,7 @@ function resetFormForNextRecord() {
 }
 
 
-function captureDashboardUiState() {
+function captureสรุปข้อมูลUiState() {
   const val = (id) => {
     const el = document.getElementById(id);
     return el ? el.value : "";
@@ -1738,7 +1788,7 @@ function setSelectValueKeep(selectId, value) {
   el.value = exists ? value : (el.querySelector('option[value="ALL"]') ? "ALL" : "");
 }
 
-function restoreDashboardUiState(state) {
+function restoreสรุปข้อมูลUiState(state) {
   if (!state) return;
   const fDate = document.getElementById("filter-date");
   const fSn = document.getElementById("filter-sn");
@@ -1755,11 +1805,11 @@ function restoreDashboardUiState(state) {
   if (typeof state.sortAsc === "boolean") sortAsc = state.sortAsc;
 }
 
-async function loadDashboardData() {
+async function loadสรุปข้อมูลData() {
   const dashLoader = document.getElementById("dash-loader");
   if (dashLoader) dashLoader.classList.remove("hidden");
-  const keepState = globalRawData && globalRawData.length ? captureDashboardUiState() : null;
-  showLoading("กำลังโหลด Dashboard...", "กำลังดึงข้อมูลล่าสุดจาก Google Sheet");
+  const keepState = globalRawData && globalRawData.length ? captureสรุปข้อมูลUiState() : null;
+  showLoading("กำลังโหลด สรุปข้อมูล...", "กำลังดึงข้อมูลล่าสุดจาก Google Sheet");
 
   try {
     const res = await callAppsScript("dashboard");
@@ -1769,7 +1819,7 @@ async function loadDashboardData() {
     globalDeptSettings = res.deptSettings || globalDeptSettings || [];
     initFilters({ keepUserSelection: !!keepState });
     if (keepState) {
-      restoreDashboardUiState(keepState);
+      restoreสรุปข้อมูลUiState(keepState);
       applyFilter({ preservePage: true });
     } else {
       applyUserDepartmentFilter();
@@ -1777,7 +1827,7 @@ async function loadDashboardData() {
     }
   } catch (err) {
     if (dashLoader) dashLoader.classList.add("hidden");
-    alert("โหลด Dashboard ไม่สำเร็จ: " + err.message);
+    alert("โหลด สรุปข้อมูล ไม่สำเร็จ: " + err.message);
   } finally {
     hideLoading(true);
   }
@@ -1942,7 +1992,7 @@ function applyFilter(options = {}) {
   });
 
   lastFilteredData = filtered;
-  renderDashboard(filtered);
+  renderสรุปข้อมูล(filtered);
 }
 
 
@@ -2000,7 +2050,7 @@ function getAllKpiEquipments(targetGroup, actualByEquip) {
 }
 
 
-function renderDepartmentKpiDashboard() {
+function renderDepartmentKpiสรุปข้อมูล() {
   const list = document.getElementById("dept-kpi-list");
   const overall = document.getElementById("dept-kpi-overall");
   const label = document.getElementById("dept-kpi-date-label");
@@ -2123,7 +2173,7 @@ function renderDepartmentKpiDashboard() {
   if (overall) overall.textContent = `รวม ${totalActual}/${totalTarget || "-"} รายการ (${totalPct}%)`;
 }
 
-function renderDashboard(data) {
+function renderสรุปข้อมูล(data) {
   currentDisplayedData = data;
   document.getElementById("dash-loader").classList.add("hidden");
   let normal = 0;
@@ -2140,7 +2190,7 @@ function renderDashboard(data) {
     equipCount[eqShort] = (equipCount[eqShort] || 0) + 1;
   });
 
-  renderDepartmentKpiDashboard();
+  renderDepartmentKpiสรุปข้อมูล();
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
@@ -2463,7 +2513,7 @@ function openPdfPreview() {
   showLoading("กำลังสร้าง Preview PDF...", "กำลังจัดหน้าเอกสารรายงาน");
   setTimeout(() => hideLoading(true), 700);
   if (!lastFilteredData || lastFilteredData.length === 0) {
-    alert("ไม่พบข้อมูลสำหรับ Export PDF กรุณาเลือก Filter หรือโหลด Dashboard ก่อน");
+    alert("ไม่พบข้อมูลสำหรับ Export PDF กรุณาเลือก Filter หรือโหลด สรุปข้อมูล ก่อน");
     return;
   }
   renderPdfTemplate(lastFilteredData);
@@ -2786,7 +2836,7 @@ function goPage(dir) {
   const totalPages = Math.ceil((lastFilteredData || []).length / ROWS_PER_PAGE);
   if (dir === 'next' && currentPage < totalPages) currentPage++;
   else if (dir === 'prev' && currentPage > 1) currentPage--;
-  renderDashboard(lastFilteredData);
+  renderสรุปข้อมูล(lastFilteredData);
 }
 
 
@@ -2797,15 +2847,15 @@ const DASHBOARD_RESYNC_MS = 60 * 1000;
 let dashboardResyncTimer = null;
 let dashboardIsSyncing = false;
 
-function isDashboardVisible() {
+function isสรุปข้อมูลVisible() {
   const dash = document.getElementById("dashboard-page");
   return dash && !dash.classList.contains("page-hidden");
 }
 
-async function resyncDashboardDataSilent() {
-  if (dashboardIsSyncing || !isDashboardVisible()) return;
+async function resyncสรุปข้อมูลDataSilent() {
+  if (dashboardIsSyncing || !isสรุปข้อมูลVisible()) return;
   dashboardIsSyncing = true;
-  const keepState = captureDashboardUiState();
+  const keepState = captureสรุปข้อมูลUiState();
 
   try {
     const res = await callAppsScript("dashboard");
@@ -2814,7 +2864,7 @@ async function resyncDashboardDataSilent() {
     globalRawData = (res.rows || []).map(normalizeRow);
     globalDeptSettings = res.deptSettings || globalDeptSettings || [];
     initFilters({ keepUserSelection: true });
-    restoreDashboardUiState(keepState);
+    restoreสรุปข้อมูลUiState(keepState);
     applyFilter({ preservePage: true });
   } catch (e) {
     console.warn("Auto resync dashboard failed:", e);
@@ -2823,9 +2873,9 @@ async function resyncDashboardDataSilent() {
   }
 }
 
-function startDashboardAutoResync() {
+function startสรุปข้อมูลAutoResync() {
   if (dashboardResyncTimer) clearInterval(dashboardResyncTimer);
-  dashboardResyncTimer = setInterval(resyncDashboardDataSilent, DASHBOARD_RESYNC_MS);
+  dashboardResyncTimer = setInterval(resyncสรุปข้อมูลDataSilent, DASHBOARD_RESYNC_MS);
 }
 
 // ==========================================
@@ -2846,7 +2896,7 @@ function exportSinglePdf(idx) {
 // ==========================================
 function exportAllPdf() {
   if (!lastFilteredData || lastFilteredData.length === 0) {
-    alert("ไม่พบข้อมูลสำหรับ Export กรุณาโหลด Dashboard ก่อน");
+    alert("ไม่พบข้อมูลสำหรับ Export กรุณาโหลด สรุปข้อมูล ก่อน");
     return;
   }
   renderPdfTemplate(lastFilteredData);
@@ -2862,7 +2912,7 @@ function exportAllExcel() {
     alert("ไม่พบข้อมูลสำหรับ Export");
     return;
   }
-  const headers = ["No", "วันที่เวลา", "แผนก", "ประเภทเครื่องมือ", "รหัสเครื่อง/SN", "ID CODE", "หมายเลขครุภัณฑ์", "สถานะ", "ผู้ตรวจสอบ", "หมายเหตุ", "รายการ Checklist"];
+  const headers = ["No", "วันที่เวลา", "แผนก", "ประเภทเครื่องมือ", "ID CODE", "รหัสเครื่อง/SN", "หมายเลขครุภัณฑ์", "สถานะ", "ผู้ตรวจสอบ", "หมายเหตุ", "รายการ Checklist"];
   const csvRows = [headers.join(",")];
   lastFilteredData.forEach((r, i) => {
     const row = [

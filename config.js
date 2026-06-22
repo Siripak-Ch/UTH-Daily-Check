@@ -1,10 +1,10 @@
 /*
-UTH Daily Check Config - FINAL V5.23 SHEET ONLY CONFIG
+UTH Daily Check Config - FINAL V5.24 SHEET ONLY CONFIG
 Frontend uses only this current Apps Script Web App URL.
 No old Apps Script URL is read from localStorage.
 */
 window.DAILY_CHECK_CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbx86-Zn-ITtVUlmaZUDe8G71MiYmMQmq6MojZQqQMDuV-QqwtzJqeAPHZHihpngEc3znw/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzyTBdcW2OVcNbNA04jFUAZ2YRa1jtm9wiEdPWsA4Z8tgR1bxE84pD2FQa-fqDECezE1A/exec",
   SPREADSHEET_ID: "1FZGKlzvMmk9bfB0Et-wQKctf7B8V0gBI0VbN2i2Umw0",
   SHEET_LINK: "https://docs.google.com/spreadsheets/d/1FZGKlzvMmk9bfB0Et-wQKctf7B8V0gBI0VbN2i2Umw0/edit?gid=1719423303#gid=1719423303",
   HOSPITAL_NAME: "โรงพยาบาลอุทัยธานี",
